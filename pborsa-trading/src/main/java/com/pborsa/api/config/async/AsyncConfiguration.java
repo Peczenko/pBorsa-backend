@@ -81,5 +81,23 @@ public class AsyncConfiguration {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Dedicated executor for Alpaca API operations.
+     * Used for async calls to Alpaca API to avoid blocking.
+     */
+    @Bean(name = "alpacaAsyncExecutor")
+    public Executor alpacaAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(30);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("alpaca-async-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        return executor;
+    }
 }
 
