@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -211,7 +212,7 @@ public class TradingFacade {
             if (positions == null) return BigDecimal.ZERO;
             return positions.stream()
                     .map(PositionDto::unrealizedPnL)
-                    .filter(v -> v != null)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 

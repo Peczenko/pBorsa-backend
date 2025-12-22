@@ -52,9 +52,7 @@ public class MarketDataPollingWorkflowImpl implements MarketDataPollingWorkflow 
         while (running && !symbols.isEmpty()) {
             try {
                 // Fetch quotes for all symbols
-                if (!symbols.isEmpty()) {
-                    latestQuotes = tradingActivities.getQuotes(userId, symbols);
-                }
+                latestQuotes = tradingActivities.getQuotes(userId, symbols);
             } catch (Exception e) {
                 log.warn("Failed to fetch quotes: {}", e.getMessage());
             }
