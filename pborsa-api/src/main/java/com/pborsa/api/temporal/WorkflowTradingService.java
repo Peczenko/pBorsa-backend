@@ -5,7 +5,6 @@ import com.pborsa.api.domain.dto.trading.OrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
-import com.pborsa.api.temporal.service.TemporalAwareService;
 import io.temporal.client.WorkflowClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -102,4 +101,3 @@ public class WorkflowTradingService extends TemporalAwareService {
         return workflowId;
     }
 }
-
