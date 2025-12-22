@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':pborsa-domain')
+    api 'io.temporal:temporal-sdk:1.25.2'
+}
+

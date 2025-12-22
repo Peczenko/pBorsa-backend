@@ -1,1 +1,7 @@
 rootProject.name = 'pBorsa-backend'
+
+include 'pborsa-domain'
+include 'pborsa-temporal-api'
+include 'pborsa-trading'
+include 'pborsa-api'
+include 'pborsa-trading-worker'

@@ -1,0 +1,26 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation project(':pborsa-domain')
+    implementation project(':pborsa-temporal-api')
+    implementation project(':pborsa-trading')
+    
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // Temporal
+    implementation 'io.temporal:temporal-sdk:1.25.2'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+}
+
+springBoot {
+    mainClass = 'com.pborsa.api.TradingWorkerApplication'
+}
+

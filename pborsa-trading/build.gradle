@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':pborsa-domain')
+    api project(':pborsa-temporal-api')
+    
+    // Spring Boot (for JPA entities, caching, etc.)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    
+    // Alpaca
+    implementation 'net.jacobpeterson.alpaca:alpaca-java:10.0.1'
+    
+    // Temporal
+    implementation 'io.temporal:temporal-sdk:1.25.2'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+}
+
