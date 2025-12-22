@@ -1,0 +1,74 @@
+services:
+  # PostgreSQL Database for Application
+  postgres:
+    image: postgres:16-alpine
+    container_name: pborsa-postgres
+    environment:
+      POSTGRES_DB: pborsa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      # Tell Spring Boot to use this as the primary JDBC datasource
+      org.springframework.boot.service-connection: jdbc
+
+  # Temporal Server (for development)
+  temporal:
+    image: temporalio/auto-setup:latest
+    container_name: pborsa-temporal
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=postgres-temporal
+    ports:
+      - "7233:7233"
+    depends_on:
+      postgres-temporal:
+        condition: service_healthy
+
+  # Separate PostgreSQL for Temporal (internal use only, not exposed to Spring Boot)
+  postgres-temporal:
+    image: postgres:16-alpine
+    container_name: pborsa-temporal-postgres
+    environment:
+      POSTGRES_DB: temporal
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - temporal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      # Exclude this database from Spring Boot auto-configuration
+      org.springframework.boot.ignore: true
+
+  # Temporal Web UI
+  temporal-ui:
+    image: temporalio/ui:latest
+    container_name: pborsa-temporal-ui
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    ports:
+      - "8088:8080"
+    depends_on:
+      - temporal
+
+volumes:
+  postgres_data:
+  temporal_postgres_data:
