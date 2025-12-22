@@ -3,8 +3,6 @@ package com.pborsa.api.temporal;
 import com.pborsa.api.domain.dto.market.StockQuoteDto;
 import com.pborsa.api.domain.dto.trading.OrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
-import com.pborsa.api.temporal.service.WorkflowMarketDataService;
-import com.pborsa.api.temporal.service.WorkflowTradingService;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowStub;
 import lombok.RequiredArgsConstructor;
@@ -115,4 +113,3 @@ public class WorkflowService {
         return workflowTradingService.startTradeAsync(userId, request);
     }
 }
-
