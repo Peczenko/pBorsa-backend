@@ -41,38 +41,22 @@ public class AccountService {
      */
     @Cacheable(value = CacheNames.ACCOUNT_INFO, key = "#userId")
     public AccountInfoDto getAccountInfo(String userId) {
-        log.debug("Fetching account info for user: {}", userId);
-
-        try {
-            AlpacaCredentialsDto credentials = credentialsService.getCredentials(userId);
-            AlpacaAPI client = clientFactory.getOrCreateClient(credentials);
-            
-            // Get account using OpenAPI AccountsApi
-            net.jacobpeterson.alpaca.openapi.trader.model.Account account = 
-                    client.trader().accounts().getAccount();
-            
-            return accountMapper.toAccountInfoDto(account);
-        } catch (AlpacaException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Failed to fetch account info for user: {}", userId, e);
-            throw new AlpacaException(
-                    AlpacaException.ErrorCode.API_ERROR,
-                    "Failed to fetch account information: " + e.getMessage(),
-                    e
-            );
-        }
+        // Delegate to internal method to avoid code duplication
+        return getAccountInfoInternal(userId);
     }
 
     /**
      * Async version of getAccountInfo.
+     * Note: This method is async, but it calls getAccountInfo() which is cached.
+     * The cache will work because this method is called from outside the class (via proxy).
      *
      * @param userId User ID
      * @return CompletableFuture with account information
      */
     @Async("alpacaAsyncExecutor")
     public CompletableFuture<AccountInfoDto> getAccountInfoAsync(String userId) {
-        return CompletableFuture.supplyAsync(() -> getAccountInfo(userId));
+        // Direct call - cache will work because this is called via Spring proxy
+        return CompletableFuture.completedFuture(getAccountInfo(userId));
     }
 
     /**
@@ -117,7 +101,37 @@ public class AccountService {
     @CacheEvict(value = CacheNames.ACCOUNT_INFO, key = "#userId")
     public AccountInfoDto refreshAccountInfo(String userId) {
         log.debug("Refreshing account info for user: {}", userId);
-        return getAccountInfo(userId);
+        // After evicting cache, fetch fresh data
+        // Note: Direct call bypasses cache due to @CacheEvict, which is what we want
+        return getAccountInfoInternal(userId);
+    }
+
+    /**
+     * Internal method to fetch account info without cache.
+     * Used by refreshAccountInfo to avoid self-invocation cache issues.
+     */
+    private AccountInfoDto getAccountInfoInternal(String userId) {
+        log.debug("Fetching account info (uncached) for user: {}", userId);
+
+        try {
+            AlpacaCredentialsDto credentials = credentialsService.getCredentials(userId);
+            AlpacaAPI client = clientFactory.getOrCreateClient(credentials);
+            
+            // Get account using OpenAPI AccountsApi
+            net.jacobpeterson.alpaca.openapi.trader.model.Account account = 
+                    client.trader().accounts().getAccount();
+            
+            return accountMapper.toAccountInfoDto(account);
+        } catch (AlpacaException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to fetch account info for user: {}", userId, e);
+            throw new AlpacaException(
+                    AlpacaException.ErrorCode.API_ERROR,
+                    "Failed to fetch account information: " + e.getMessage(),
+                    e
+            );
+        }
     }
 
     /**

@@ -43,21 +43,8 @@ public class UserCredentialsService {
     @Cacheable(value = CacheNames.API_CREDENTIALS, key = "#userId")
     @Transactional(readOnly = true)
     public AlpacaCredentialsDto getCredentials(String userId) {
-        log.debug("Fetching credentials from database for user: {}", userId);
-        
-        UserApiCredentials entity = credentialsRepository.findByUserId(userId)
-                .orElseThrow(() -> new CredentialsNotFoundException(userId));
-
-        if (!entity.isActive()) {
-            throw new CredentialsNotFoundException(userId);
-        }
-
-        return AlpacaCredentialsDto.builder()
-                .userId(entity.getUserId())
-                .apiKey(encryptionService.decrypt(entity.getApiKeyEncrypted()))
-                .secretKey(encryptionService.decrypt(entity.getSecretKeyEncrypted()))
-                .paperTrading(entity.isPaperTrading())
-                .build();
+        // Delegate to internal method to avoid code duplication
+        return getCredentialsInternal(userId);
     }
 
     /**
@@ -154,7 +141,31 @@ public class UserCredentialsService {
     @Transactional(readOnly = true)
     public AlpacaCredentialsDto refreshCredentials(String userId) {
         log.debug("Refreshing credentials cache for user: {}", userId);
-        return getCredentials(userId);
+        // After evicting cache, fetch fresh data
+        // Note: Direct call bypasses cache due to @CacheEvict, which is what we want
+        return getCredentialsInternal(userId);
+    }
+
+    /**
+     * Internal method to fetch credentials without cache.
+     * Used by refreshCredentials to avoid self-invocation cache issues.
+     */
+    private AlpacaCredentialsDto getCredentialsInternal(String userId) {
+        log.debug("Fetching credentials from database (uncached) for user: {}", userId);
+        
+        UserApiCredentials entity = credentialsRepository.findByUserId(userId)
+                .orElseThrow(() -> new CredentialsNotFoundException(userId));
+
+        if (!entity.isActive()) {
+            throw new CredentialsNotFoundException(userId);
+        }
+
+        return AlpacaCredentialsDto.builder()
+                .userId(entity.getUserId())
+                .apiKey(encryptionService.decrypt(entity.getApiKeyEncrypted()))
+                .secretKey(encryptionService.decrypt(entity.getSecretKeyEncrypted()))
+                .paperTrading(entity.isPaperTrading())
+                .build();
     }
 }
 
