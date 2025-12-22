@@ -2,6 +2,7 @@ package com.pborsa.api.config.temporal;
 
 import com.pborsa.api.temporal.config.TaskQueues;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
+import com.pborsa.api.temporal.workflow.HistoricalMarketDataReplayWorkflow;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
 import io.temporal.client.WorkflowClient;
@@ -50,11 +51,11 @@ public class TemporalWorkflowsConfiguration extends AbstractTemporalWorkflowsCon
         if (TradeExecutionWorkflow.class.isAssignableFrom(workflowClass) ||
             BatchTradeExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
             return TaskQueues.TRADING_TASK_QUEUE;
-        } else if (MarketDataPollingWorkflow.class.isAssignableFrom(workflowClass)) {
+        } else if (MarketDataPollingWorkflow.class.isAssignableFrom(workflowClass) ||
+                HistoricalMarketDataReplayWorkflow.class.isAssignableFrom(workflowClass)) {
             return TaskQueues.MARKET_DATA_TASK_QUEUE;
         }
         // Default to trading queue
         return TaskQueues.TRADING_TASK_QUEUE;
     }
 }
-

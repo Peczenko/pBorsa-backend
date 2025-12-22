@@ -2,7 +2,6 @@ package com.pborsa.api.temporal;
 
 import com.pborsa.api.config.temporal.TemporalProperties;
 import com.pborsa.api.domain.dto.market.StockQuoteDto;
-import com.pborsa.api.temporal.service.TemporalAwareService;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
 import io.temporal.client.WorkflowClient;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +22,14 @@ import java.util.function.Function;
 public class WorkflowMarketDataService extends TemporalAwareService {
 
     private final Function<String, MarketDataPollingWorkflow> marketDataPollingWorkflowProvider;
+    private final WorkflowClient workflowClient;
 
     public WorkflowMarketDataService(
             TemporalProperties temporalProperties,
+            WorkflowClient workflowClient,
             Function<String, MarketDataPollingWorkflow> marketDataPollingWorkflowProvider) {
         super(temporalProperties);
+        this.workflowClient = workflowClient;
         this.marketDataPollingWorkflowProvider = marketDataPollingWorkflowProvider;
     }
 
@@ -60,7 +62,10 @@ public class WorkflowMarketDataService extends TemporalAwareService {
     public void addSymbolsToPolling(String userId, Set<String> symbols) {
         runWithTemporal(() -> {
             String workflowId = generateMarketDataWorkflowId(userId);
-            MarketDataPollingWorkflow workflow = marketDataPollingWorkflowProvider.apply(workflowId);
+            MarketDataPollingWorkflow workflow = workflowClient.newWorkflowStub(
+                    MarketDataPollingWorkflow.class,
+                    workflowId
+            );
             workflow.addSymbols(symbols);
         });
     }
@@ -74,7 +79,10 @@ public class WorkflowMarketDataService extends TemporalAwareService {
     public void removeSymbolsFromPolling(String userId, Set<String> symbols) {
         runWithTemporal(() -> {
             String workflowId = generateMarketDataWorkflowId(userId);
-            MarketDataPollingWorkflow workflow = marketDataPollingWorkflowProvider.apply(workflowId);
+            MarketDataPollingWorkflow workflow = workflowClient.newWorkflowStub(
+                    MarketDataPollingWorkflow.class,
+                    workflowId
+            );
             workflow.removeSymbols(symbols);
         });
     }
@@ -89,7 +97,10 @@ public class WorkflowMarketDataService extends TemporalAwareService {
         return runWithTemporalOrElse(
                 () -> {
                     String workflowId = generateMarketDataWorkflowId(userId);
-                    MarketDataPollingWorkflow workflow = marketDataPollingWorkflowProvider.apply(workflowId);
+                    MarketDataPollingWorkflow workflow = workflowClient.newWorkflowStub(
+                            MarketDataPollingWorkflow.class,
+                            workflowId
+                    );
                     return workflow.getLatestQuotes();
                 },
                 () -> {
@@ -109,7 +120,10 @@ public class WorkflowMarketDataService extends TemporalAwareService {
 
         runWithTemporal(() -> {
             String workflowId = generateMarketDataWorkflowId(userId);
-            MarketDataPollingWorkflow workflow = marketDataPollingWorkflowProvider.apply(workflowId);
+            MarketDataPollingWorkflow workflow = workflowClient.newWorkflowStub(
+                    MarketDataPollingWorkflow.class,
+                    workflowId
+            );
             workflow.stopPolling();
         });
     }
@@ -121,4 +135,3 @@ public class WorkflowMarketDataService extends TemporalAwareService {
         return "market-data-%s".formatted(userId);
     }
 }
-

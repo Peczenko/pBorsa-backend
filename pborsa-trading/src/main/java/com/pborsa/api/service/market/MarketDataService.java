@@ -13,15 +13,20 @@ import com.pborsa.api.service.mapper.MarketDataMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jacobpeterson.alpaca.AlpacaAPI;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockBar;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockBarsResp;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockAdjustment;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.StockFeed;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.StockLatestQuotesResp;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.StockLatestTradesResp;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.StockQuote;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.StockTrade;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.Sort;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -247,11 +252,58 @@ public class MarketDataService {
     public List<StockBarDto> getHistoricalBars(String userId, String symbol, int timeframe,
                                                 String period, ZonedDateTime start, ZonedDateTime end, Integer limit) {
         log.debug("Fetching historical bars for symbol: {} from {} to {}", symbol, start, end);
-        
-        // For now, return empty list - historical bars require more complex API calls
-        // that vary significantly between Alpaca API versions
-        log.warn("Historical bars not yet implemented");
-        return Collections.emptyList();
+        try {
+            AlpacaCredentialsDto credentials = credentialsService.getCredentials(userId);
+            AlpacaAPI client = clientFactory.getOrCreateClient(credentials);
+            String timeframeString = buildTimeframe(timeframe, period);
+
+            OffsetDateTime startTime = start.toOffsetDateTime();
+            OffsetDateTime endTime = end.toOffsetDateTime();
+            StockBarsResp response = client.marketData().stock().stockBars(
+                    symbol,
+                    timeframeString,
+                    startTime,
+                    endTime,
+                    limit != null ? limit.longValue() : null,
+                    StockAdjustment.RAW,
+                    null,
+                    StockFeed.IEX,
+                    null,
+                    null,
+                    Sort.ASC
+            );
+
+            Map<String, List<StockBar>> bars = response.getBars();
+            if (bars == null || bars.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<StockBarDto> result = new ArrayList<>();
+            for (StockBar bar : bars.getOrDefault(symbol, Collections.emptyList())) {
+                result.add(marketDataMapper.toStockBarDto(bar, symbol));
+            }
+            return result;
+        } catch (AlpacaException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to fetch historical bars for symbol: {}", symbol, e);
+            throw new AlpacaException(
+                    AlpacaException.ErrorCode.MARKET_DATA_ERROR,
+                    "Failed to fetch historical bars: " + e.getMessage(),
+                    e
+            );
+        }
+    }
+
+    private String buildTimeframe(int timeframe, String period) {
+        String normalized = period == null ? "MINUTE" : period.trim().toUpperCase(Locale.ROOT);
+        if (normalized.contains("DAY")) {
+            return timeframe + "Day";
+        }
+        if (normalized.contains("HOUR")) {
+            return timeframe + "Hour";
+        }
+        return timeframe + "Min";
     }
 
     /**
