@@ -4,6 +4,7 @@ import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowClientOptions;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import io.temporal.worker.WorkerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @Slf4j
-public class TemporalClientConfiguration {
+public class TemporalConfiguration {
     
     @Value("${spring.temporal.connection.target:localhost:7233}")
     private String temporalTarget;
@@ -41,6 +42,14 @@ public class TemporalClientConfiguration {
                 .setNamespace(namespace)
                 .build()
         );
+    }
+
+    /**
+     * Creates the worker factory (used by API-hosted workers such as strategy execution).
+     */
+    @Bean
+    public WorkerFactory workerFactory(WorkflowClient workflowClient) {
+        return WorkerFactory.newInstance(workflowClient);
     }
 }
 

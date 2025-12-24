@@ -3,6 +3,7 @@ package com.pborsa.api.controller.exception;
 import com.pborsa.api.controller.response.ApiResponse;
 import com.pborsa.api.exception.AlpacaException;
 import com.pborsa.api.exception.CredentialsNotFoundException;
+import com.pborsa.api.exception.StrategyExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,6 +74,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("INVALID_ARGUMENT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(StrategyExecutionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStrategyExecutionException(StrategyExecutionException ex) {
+        log.error("Strategy execution error: {} - {}", ex.getErrorCode(), ex.getMessage());
+        HttpStatus status = switch (ex.getErrorCode()) {
+            case STRATEGY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
+            case TRADING_ENGINE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+            case CREDENTIALS_MISSING -> HttpStatus.UNAUTHORIZED;
+            case DATA_STREAM_ERROR -> HttpStatus.BAD_GATEWAY;
+        };
+        return ResponseEntity
+                .status(status)
+                .body(ApiResponse.error(ex.getErrorCode().name(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

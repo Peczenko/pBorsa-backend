@@ -37,17 +37,6 @@ public class AccountController {
     }
 
     /**
-     * Gets account information asynchronously.
-     */
-    @GetMapping("/{userId}/async")
-    public CompletableFuture<ResponseEntity<ApiResponse<AccountInfoDto>>> getAccountInfoAsync(
-            @PathVariable String userId
-    ) {
-        return accountService.getAccountInfoAsync(userId)
-                .thenApply(account -> ResponseEntity.ok(ApiResponse.success(account)));
-    }
-
-    /**
      * Gets buying power.
      */
     @GetMapping("/{userId}/buying-power")

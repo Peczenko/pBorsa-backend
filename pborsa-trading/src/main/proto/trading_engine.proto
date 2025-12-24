@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package com.pborsa.api.tradingengine.v1;
+
+option java_multiple_files = true;
+option java_package = "com.pborsa.api.tradingengine.v1";
+option java_outer_classname = "TradingEngineProto";
+
+import "google/protobuf/timestamp.proto";
+
+service TradingEngineService {
+  rpc ExecuteStrategy(stream StrategyExecutionChunk) returns (ExecutionAck);
+}
+
+message StrategyExecutionHeader {
+  string execution_id = 1;
+  string user_id = 2;
+  string strategy_id = 3;
+  string symbol = 4;
+  string timeframe = 5;
+  google.protobuf.Timestamp start = 6;
+  google.protobuf.Timestamp end = 7;
+}
+
+message Bar {
+  google.protobuf.Timestamp timestamp = 1;
+  double open = 2;
+  double high = 3;
+  double low = 4;
+  double close = 5;
+  int64 volume = 6;
+  int64 trade_count = 7;
+  double vwap = 8;
+}
+
+message BarBatch {
+  repeated Bar bars = 1;
+}
+
+message StrategyExecutionChunk {
+  oneof payload {
+    StrategyExecutionHeader header = 1;
+    BarBatch batch = 2;
+  }
+}
+
+message ExecutionAck {
+  bool accepted = 1;
+  string message = 2;
+  string execution_id = 3;
+}

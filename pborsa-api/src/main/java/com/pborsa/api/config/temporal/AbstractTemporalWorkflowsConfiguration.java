@@ -3,6 +3,7 @@ package com.pborsa.api.config.temporal;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.HistoricalMarketDataReplayWorkflow;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
+import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
 import org.springframework.context.annotation.Bean;
 
@@ -55,5 +56,13 @@ public abstract class AbstractTemporalWorkflowsConfiguration {
     @Bean
     public Function<String, HistoricalMarketDataReplayWorkflow> historicalReplayWorkflowProvider() {
         return createWorkflowProvider(HistoricalMarketDataReplayWorkflow.class);
+    }
+
+    /**
+     * Creates a provider bean for StrategyExecutionWorkflow.
+     */
+    @Bean
+    public Function<String, StrategyExecutionWorkflow> strategyExecutionWorkflowProvider() {
+        return createWorkflowProvider(StrategyExecutionWorkflow.class);
     }
 }
