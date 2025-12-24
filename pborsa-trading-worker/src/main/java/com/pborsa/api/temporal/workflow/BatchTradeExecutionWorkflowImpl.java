@@ -4,7 +4,6 @@ import com.pborsa.api.temporal.config.TaskQueues;
 import com.pborsa.api.domain.dto.trading.OrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.temporal.activity.TradingActivities;
-import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
