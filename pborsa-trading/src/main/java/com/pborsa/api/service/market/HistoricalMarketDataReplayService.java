@@ -4,7 +4,6 @@ import com.pborsa.api.domain.dto.market.HistoricalReplayRequest;
 import com.pborsa.api.domain.dto.market.HistoricalReplayTickDto;
 import com.pborsa.api.domain.dto.market.StockBarDto;
 import com.pborsa.api.exception.AlpacaException;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,18 +11,14 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Service that replays historical market data as a real-time stream.
@@ -39,11 +34,15 @@ public class HistoricalMarketDataReplayService {
     private static final String DEFAULT_PERIOD = "MINUTE";
 
     private final MarketDataService marketDataService;
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
     private final Map<String, ReplaySession> sessions = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> sessionReplayIds = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
-    public String startReplay(String userId,
+    public String startReplay(String sessionId,
+                              String userId,
                               HistoricalReplayRequest request,
+                              String workflowId,
+                              Consumer<String> workflowStopper,
                               BiConsumer<String, HistoricalReplayTickDto> consumer) {
         validateRequest(request);
 
@@ -51,7 +50,6 @@ public class HistoricalMarketDataReplayService {
         Instant start = request.start();
         Instant end = request.end();
         int stepSeconds = request.stepSeconds() != null ? request.stepSeconds() : DEFAULT_STEP_SECONDS;
-        int tickMillis = request.tickMillis() != null ? request.tickMillis() : DEFAULT_TICK_MILLIS;
         String timeframe = request.timeframe() != null ? request.timeframe() : DEFAULT_PERIOD;
 
         List<StockBarDto> bars = marketDataService.getHistoricalBars(
@@ -74,39 +72,47 @@ public class HistoricalMarketDataReplayService {
         bars.sort(Comparator.comparing(StockBarDto::timestamp));
 
         String replayId = generateReplayId(userId, symbol);
-        ReplaySession session = new ReplaySession(userId, symbol, start, end, stepSeconds, tickMillis, bars, consumer);
+        ReplaySession session = new ReplaySession(sessionId, userId, symbol, start, end, stepSeconds, bars, consumer);
+        session.workflowId = workflowId;
+        session.workflowStopper = workflowStopper;
         sessions.put(replayId, session);
+        if (sessionId != null) {
+            sessionReplayIds.computeIfAbsent(sessionId, key -> ConcurrentHashMap.newKeySet()).add(replayId);
+        }
 
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> emitTick(replayId),
-                0,
-                tickMillis,
-                TimeUnit.MILLISECONDS);
-        session.future = future;
+        scheduleReplay(replayId);
 
         log.info("Started historical replay {} for user {} symbol {}", replayId, userId, symbol);
         return replayId;
     }
 
-    public Optional<String> stopReplay(String replayId) {
+    public Optional<ReplayStopContext> stopReplay(String replayId) {
         ReplaySession session = sessions.remove(replayId);
         if (session == null) {
+            log.info("Historical replay {} not found", replayId);
             return Optional.empty();
         }
 
         session.running = false;
-        if (session.future != null) {
-            session.future.cancel(false);
-        }
+        cancelScheduledTask(session);
+        unlinkFromSession(session.sessionId, replayId);
+        stopWorkflowIfAttached(session, replayId);
 
         log.info("Stopped historical replay {}", replayId);
-        return Optional.ofNullable(session.workflowId);
+        return Optional.of(new ReplayStopContext(replayId, session.userId, session.workflowId));
     }
 
-    public void attachWorkflow(String replayId, String workflowId) {
-        ReplaySession session = sessions.get(replayId);
-        if (session != null) {
-            session.workflowId = workflowId;
+    public List<ReplayStopContext> stopAllForSession(String sessionId) {
+        Set<String> replayIds = sessionReplayIds.remove(sessionId);
+        if (replayIds == null || replayIds.isEmpty()) {
+            return Collections.emptyList();
         }
+
+        List<ReplayStopContext> stopped = new ArrayList<>();
+        for (String replayId : replayIds) {
+            stopReplay(replayId).ifPresent(stopped::add);
+        }
+        return stopped;
     }
 
     private void emitTick(String replayId) {
@@ -115,41 +121,93 @@ public class HistoricalMarketDataReplayService {
             return;
         }
 
+        boolean finished = false;
+        StockBarDto latestBar = null;
+
         synchronized (session) {
             if (!session.running) {
                 return;
             }
 
             session.playbackTime = session.playbackTime.plusSeconds(session.stepSeconds);
-            if (session.playbackTime.isAfter(session.end)) {
-                stopReplay(replayId);
-                return;
-            }
-
-            StockBarDto latestBar = null;
-            while (session.barIndex < session.bars.size()) {
-                StockBarDto bar = session.bars.get(session.barIndex);
-                if (bar.timestamp() == null || bar.timestamp().isAfter(session.playbackTime)) {
-                    break;
+            if (session.barIndex >= session.bars.size() || session.playbackTime.isAfter(session.end)) {
+                finished = true;
+                session.running = false;
+            } else {
+                while (session.barIndex < session.bars.size()) {
+                    StockBarDto bar = session.bars.get(session.barIndex);
+                    if (bar.timestamp() == null || bar.timestamp().isAfter(session.playbackTime)) {
+                        break;
+                    }
+                    latestBar = bar;
+                    session.barIndex++;
                 }
-                latestBar = bar;
-                session.barIndex++;
-            }
 
-            if (latestBar == null) {
-                return;
-            }
+                if (latestBar == null) {
+                    return;
+                }
 
-            session.sequence++;
-            HistoricalReplayTickDto tick = HistoricalReplayTickDto.builder()
-                    .replayId(replayId)
-                    .symbol(session.symbol)
-                    .playbackTime(session.playbackTime)
-                    .sourceBarTime(latestBar.timestamp())
-                    .sequence(session.sequence)
-                    .bar(latestBar)
-                    .build();
-            session.consumer.accept(replayId, tick);
+                session.sequence++;
+            }
+        }
+
+        if (finished) {
+            stopReplay(replayId);
+            return;
+        }
+
+        HistoricalReplayTickDto tick = HistoricalReplayTickDto.builder()
+                .replayId(replayId)
+                .symbol(session.symbol)
+                .playbackTime(session.playbackTime)
+                .sourceBarTime(latestBar.timestamp())
+                .sequence(session.sequence)
+                .bar(latestBar)
+                .build();
+        session.consumer.accept(replayId, tick);
+    }
+
+    private void scheduleReplay(String replayId) {
+        ReplaySession session = sessions.get(replayId);
+        if (session == null) {
+            return;
+        }
+
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
+                () -> emitTick(replayId),
+                0,
+                DEFAULT_TICK_MILLIS,
+                TimeUnit.MILLISECONDS
+        );
+        session.scheduledTask = future;
+    }
+
+    private void cancelScheduledTask(ReplaySession session) {
+        if (session.scheduledTask != null) {
+            session.scheduledTask.cancel(false);
+        }
+    }
+
+    private void unlinkFromSession(String sessionId, String replayId) {
+        if (sessionId == null) {
+            return;
+        }
+        Set<String> replayIds = sessionReplayIds.get(sessionId);
+        if (replayIds != null) {
+            replayIds.remove(replayId);
+            if (replayIds.isEmpty()) {
+                sessionReplayIds.remove(sessionId);
+            }
+        }
+    }
+
+    private void stopWorkflowIfAttached(ReplaySession session, String replayId) {
+        if (session.workflowId != null && session.workflowStopper != null) {
+            try {
+                session.workflowStopper.accept(session.workflowId);
+            } catch (Exception e) {
+                log.warn("Failed to stop workflow {} for replay {}", session.workflowId, replayId, e);
+            }
         }
     }
 
@@ -167,41 +225,40 @@ public class HistoricalMarketDataReplayService {
         return "replay-%s-%s-%s".formatted(userId, symbol, UUID.randomUUID());
     }
 
-    @PreDestroy
-    public void shutdown() {
-        scheduler.shutdownNow();
-    }
+    public record ReplayStopContext(String replayId, String userId, String workflowId) {}
+
 
     private static class ReplaySession {
+        private final String sessionId;
         private final String userId;
         private final String symbol;
         private final Instant start;
         private final Instant end;
         private final int stepSeconds;
-        private final int tickMillis;
         private final List<StockBarDto> bars;
         private final BiConsumer<String, HistoricalReplayTickDto> consumer;
         private Instant playbackTime;
         private int barIndex;
         private long sequence;
-        private boolean running;
-        private ScheduledFuture<?> future;
+        private volatile boolean running;
         private String workflowId;
+        private Consumer<String> workflowStopper;
+        private ScheduledFuture<?> scheduledTask;
 
-        private ReplaySession(String userId,
+        private ReplaySession(String sessionId,
+                              String userId,
                               String symbol,
                               Instant start,
                               Instant end,
                               int stepSeconds,
-                              int tickMillis,
                               List<StockBarDto> bars,
                               BiConsumer<String, HistoricalReplayTickDto> consumer) {
+            this.sessionId = sessionId;
             this.userId = userId;
             this.symbol = symbol;
             this.start = start;
             this.end = end;
             this.stepSeconds = stepSeconds;
-            this.tickMillis = tickMillis;
             this.bars = bars;
             this.consumer = consumer;
             this.playbackTime = start;

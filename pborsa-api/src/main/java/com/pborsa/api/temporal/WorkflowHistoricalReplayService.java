@@ -18,7 +18,6 @@ import java.util.function.Function;
 public class WorkflowHistoricalReplayService extends TemporalAwareService {
 
     private static final int DEFAULT_STEP_SECONDS = 5;
-    private static final long DEFAULT_TICK_MILLIS = 50L;
 
     private final Function<String, HistoricalMarketDataReplayWorkflow> replayWorkflowProvider;
     private final WorkflowClient workflowClient;
@@ -36,10 +35,8 @@ public class WorkflowHistoricalReplayService extends TemporalAwareService {
                               String symbol,
                               Instant start,
                               Instant end,
-                              Integer stepSeconds,
-                              Integer tickMillis) {
+                              Integer stepSeconds) {
         int resolvedStepSeconds = stepSeconds != null ? stepSeconds : DEFAULT_STEP_SECONDS;
-        long resolvedTickMillis = tickMillis != null ? tickMillis.longValue() : DEFAULT_TICK_MILLIS;
         String workflowId = generateReplayWorkflowId(userId, symbol);
 
         runWithTemporal(() -> {
@@ -50,8 +47,7 @@ public class WorkflowHistoricalReplayService extends TemporalAwareService {
                     symbol,
                     start,
                     end,
-                    resolvedStepSeconds,
-                    resolvedTickMillis
+                    resolvedStepSeconds
             );
         });
 

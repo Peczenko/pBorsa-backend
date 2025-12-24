@@ -10,7 +10,6 @@ public record HistoricalReplayRequest(
         Instant start,
         Instant end,
         Integer stepSeconds,
-        Integer tickMillis,
         String timeframe
 ) {
 }

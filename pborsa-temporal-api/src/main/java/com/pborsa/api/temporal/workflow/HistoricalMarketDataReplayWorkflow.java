@@ -18,8 +18,7 @@ public interface HistoricalMarketDataReplayWorkflow {
                      String symbol,
                      Instant startTime,
                      Instant endTime,
-                     int stepSeconds,
-                     long tickMillis);
+                     int stepSeconds);
 
     @SignalMethod
     void stopReplay();

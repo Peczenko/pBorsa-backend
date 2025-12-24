@@ -7,11 +7,14 @@ import com.pborsa.api.service.market.HistoricalMarketDataReplayService;
 import com.pborsa.api.temporal.WorkflowHistoricalReplayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 /**
  * WebSocket controller for historical market data replay.
@@ -30,23 +33,32 @@ public class HistoricalReplayWebSocketController {
      */
     @MessageMapping("/replay/start/{userId}")
     public void startReplay(
+            @Header("simpSessionId") String sessionId,
             @DestinationVariable String userId,
             @Payload HistoricalReplayRequest request
     ) {
-        String replayId = replayService.startReplay(
-                userId,
-                request,
-                (id, tick) -> sendReplayTick(userId, id, tick)
-        );
         String workflowId = workflowReplayService.startReplay(
                 userId,
                 request.symbol(),
                 request.start(),
                 request.end(),
-                request.stepSeconds(),
-                request.tickMillis()
+                request.stepSeconds()
         );
-        replayService.attachWorkflow(replayId, workflowId);
+
+        String replayId;
+        try {
+            replayId = replayService.startReplay(
+                    sessionId,
+                    userId,
+                    request,
+                    workflowId,
+                    workflowReplayService::stopReplay,
+                    (id, tick) -> sendReplayTick(userId, id, tick)
+            );
+        } catch (Exception e) {
+            workflowReplayService.stopReplay(workflowId);
+            throw e;
+        }
 
         HistoricalReplayControlResponse response = HistoricalReplayControlResponse.builder()
                 .replayId(replayId)
@@ -68,7 +80,9 @@ public class HistoricalReplayWebSocketController {
             @DestinationVariable String userId,
             @DestinationVariable String replayId
     ) {
-        replayService.stopReplay(replayId).ifPresent(workflowReplayService::stopReplay);
+        if (replayService.stopReplay(replayId).isEmpty()) {
+            log.warn("No workflow associated with replay ID {}", replayId);
+        }
 
         HistoricalReplayControlResponse response = HistoricalReplayControlResponse.builder()
                 .replayId(replayId)
@@ -76,6 +90,19 @@ public class HistoricalReplayWebSocketController {
                 .build();
 
         messagingTemplate.convertAndSend("/topic/replay/status/" + userId, response);
+    }
+
+    @EventListener
+    public void handleDisconnect(SessionDisconnectEvent event) {
+        String sessionId = event.getSessionId();
+        replayService.stopAllForSession(sessionId).forEach(stop -> {
+            HistoricalReplayControlResponse response = HistoricalReplayControlResponse.builder()
+                    .replayId(stop.replayId())
+                    .workflowId(stop.workflowId())
+                    .status("STOPPED")
+                    .build();
+            messagingTemplate.convertAndSend("/topic/replay/status/" + stop.userId(), response);
+        });
     }
 
     private void sendReplayTick(String userId, String replayId, HistoricalReplayTickDto tick) {

@@ -259,6 +259,8 @@ public class MarketDataService {
 
             OffsetDateTime startTime = start.toOffsetDateTime();
             OffsetDateTime endTime = end.toOffsetDateTime();
+            log.info("Requesting bars for symbol: {} timeframe: {} start: {} end: {} limit: {}",
+                    symbol, timeframeString, startTime, endTime, limit != null ? limit.longValue() : null);
             StockBarsResp response = client.marketData().stock().stockBars(
                     symbol,
                     timeframeString,
@@ -274,7 +276,7 @@ public class MarketDataService {
             );
 
             Map<String, List<StockBar>> bars = response.getBars();
-            if (bars == null || bars.isEmpty()) {
+            if (bars.isEmpty()) {
                 return Collections.emptyList();
             }
 
