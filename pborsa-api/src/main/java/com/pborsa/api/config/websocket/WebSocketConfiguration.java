@@ -36,6 +36,10 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
         registry.addEndpoint("/ws/trading")
                 .setAllowedOriginPatterns(allowedOrigins.split(","))
                 .withSockJS();
+
+        registry.addEndpoint("/ws/market-data")
+                .setAllowedOriginPatterns(allowedOrigins.split(","))
+                .withSockJS();
     }
 }
 
