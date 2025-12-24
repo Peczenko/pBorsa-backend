@@ -6,7 +6,7 @@ import com.pborsa.api.domain.dto.market.StockBarDto;
 import com.pborsa.api.domain.dto.market.StockQuoteDto;
 import com.pborsa.api.domain.dto.market.StockTradeDto;
 import com.pborsa.api.service.market.MarketDataService;
-import com.pborsa.api.temporal.service.WorkflowService;
+import com.pborsa.api.temporal.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

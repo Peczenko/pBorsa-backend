@@ -6,7 +6,7 @@ import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.service.trading.OrderService;
 import com.pborsa.api.service.trading.PositionService;
 import com.pborsa.api.service.trading.TradingFacade;
-import com.pborsa.api.temporal.service.WorkflowService;
+import com.pborsa.api.temporal.WorkflowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
