@@ -5,6 +5,8 @@ import com.pborsa.api.domain.dto.account.AccountInfoDto;
 import com.pborsa.api.domain.dto.account.PositionDto;
 import com.pborsa.api.service.trading.AccountService;
 import com.pborsa.api.service.trading.PositionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/v1/account")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Account", description = "Account balances, cash, buying power, and positions")
 public class AccountController {
 
     private final AccountService accountService;
@@ -30,6 +33,7 @@ public class AccountController {
      * Gets account information.
      */
     @GetMapping("/{userId}")
+    @Operation(summary = "Get account info", description = "Returns Alpaca account state for the given user")
     public ResponseEntity<ApiResponse<AccountInfoDto>> getAccountInfo(@PathVariable String userId) {
         log.debug("Getting account info for user: {}", userId);
         AccountInfoDto account = accountService.getAccountInfo(userId);
@@ -40,6 +44,7 @@ public class AccountController {
      * Gets buying power.
      */
     @GetMapping("/{userId}/buying-power")
+    @Operation(summary = "Get buying power", description = "Returns current buying power for the user")
     public ResponseEntity<ApiResponse<BigDecimal>> getBuyingPower(@PathVariable String userId) {
         BigDecimal buyingPower = accountService.getBuyingPower(userId);
         return ResponseEntity.ok(ApiResponse.success(buyingPower));
@@ -49,6 +54,7 @@ public class AccountController {
      * Gets cash balance.
      */
     @GetMapping("/{userId}/cash")
+    @Operation(summary = "Get cash balance", description = "Returns cash on the account")
     public ResponseEntity<ApiResponse<BigDecimal>> getCashBalance(@PathVariable String userId) {
         BigDecimal cash = accountService.getCashBalance(userId);
         return ResponseEntity.ok(ApiResponse.success(cash));
@@ -58,6 +64,7 @@ public class AccountController {
      * Gets equity.
      */
     @GetMapping("/{userId}/equity")
+    @Operation(summary = "Get equity", description = "Returns account equity value")
     public ResponseEntity<ApiResponse<BigDecimal>> getEquity(@PathVariable String userId) {
         BigDecimal equity = accountService.getEquity(userId);
         return ResponseEntity.ok(ApiResponse.success(equity));
@@ -67,6 +74,7 @@ public class AccountController {
      * Checks if trading is allowed.
      */
     @GetMapping("/{userId}/can-trade")
+    @Operation(summary = "Check trade permission", description = "Returns true if account can currently trade")
     public ResponseEntity<ApiResponse<Boolean>> canTrade(@PathVariable String userId) {
         boolean canTrade = accountService.canTrade(userId);
         return ResponseEntity.ok(ApiResponse.success(canTrade));
@@ -76,6 +84,7 @@ public class AccountController {
      * Refreshes account info cache.
      */
     @PostMapping("/{userId}/refresh")
+    @Operation(summary = "Refresh account info", description = "Forces a fetch from Alpaca and updates cache")
     public ResponseEntity<ApiResponse<AccountInfoDto>> refreshAccountInfo(@PathVariable String userId) {
         AccountInfoDto account = accountService.refreshAccountInfo(userId);
         return ResponseEntity.ok(ApiResponse.success(account, "Account info refreshed"));
@@ -87,6 +96,7 @@ public class AccountController {
      * Gets all positions.
      */
     @GetMapping("/{userId}/positions")
+    @Operation(summary = "Get positions", description = "Returns all open positions for the user")
     public ResponseEntity<ApiResponse<List<PositionDto>>> getPositions(@PathVariable String userId) {
         log.debug("Getting positions for user: {}", userId);
         List<PositionDto> positions = positionService.getAllPositions(userId);
@@ -97,6 +107,7 @@ public class AccountController {
      * Gets a specific position.
      */
     @GetMapping("/{userId}/positions/{symbol}")
+    @Operation(summary = "Get single position", description = "Returns position for the symbol if it exists")
     public ResponseEntity<ApiResponse<PositionDto>> getPosition(
             @PathVariable String userId,
             @PathVariable String symbol
@@ -109,6 +120,7 @@ public class AccountController {
      * Gets total portfolio value.
      */
     @GetMapping("/{userId}/portfolio-value")
+    @Operation(summary = "Get portfolio value", description = "Returns total portfolio market value")
     public ResponseEntity<ApiResponse<BigDecimal>> getPortfolioValue(@PathVariable String userId) {
         BigDecimal value = positionService.calculateTotalPortfolioValue(userId);
         return ResponseEntity.ok(ApiResponse.success(value));
@@ -118,6 +130,7 @@ public class AccountController {
      * Gets total unrealized P&L.
      */
     @GetMapping("/{userId}/unrealized-pnl")
+    @Operation(summary = "Get unrealized PnL", description = "Returns total unrealized profit/loss")
     public ResponseEntity<ApiResponse<BigDecimal>> getUnrealizedPnL(@PathVariable String userId) {
         BigDecimal pnl = positionService.calculateTotalUnrealizedPnL(userId);
         return ResponseEntity.ok(ApiResponse.success(pnl));
