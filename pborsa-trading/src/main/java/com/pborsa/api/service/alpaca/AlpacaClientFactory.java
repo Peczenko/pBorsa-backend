@@ -31,7 +31,12 @@ public class AlpacaClientFactory {
      * @param credentials The user's Alpaca credentials
      * @return Configured AlpacaAPI instance
      */
-    @Cacheable(value = CacheNames.ALPACA_CLIENTS, key = "#credentials.userId()")
+    @Cacheable(
+            value = CacheNames.ALPACA_CLIENTS,
+            key = "#credentials.userId()",
+            cacheManager = "apiCredentialsCacheManager",
+            sync = true
+    )
     public AlpacaAPI getOrCreateClient(AlpacaCredentialsDto credentials) {
         log.debug("Creating new Alpaca API client for user: {}", credentials.userId());
         
