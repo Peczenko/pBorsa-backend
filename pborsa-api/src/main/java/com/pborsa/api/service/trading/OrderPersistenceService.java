@@ -23,7 +23,7 @@ public class OrderPersistenceService {
 
     private static final EnumSet<OrderStatus> TERMINAL_STATUSES = EnumSet.of(
             OrderStatus.FILLED,
-            OrderStatus.CANCELLED,
+            OrderStatus.CANCELED,
             OrderStatus.EXPIRED,
             OrderStatus.REJECTED
     );

@@ -28,7 +28,7 @@ public enum OrderStatus {
     /**
      * Order has been cancelled.
      */
-    CANCELLED,
+    CANCELED,
 
     /**
      * Order has expired.
