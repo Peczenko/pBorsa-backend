@@ -12,6 +12,11 @@ service TradingEngineService {
   rpc ExecuteStrategy(stream StrategyExecutionChunk) returns (ExecutionAck);
 }
 
+// Accepts trading/order requests (gRPC path into pBorsa API).
+service TradingOrderService {
+  rpc PlaceOrder(OrderRequest) returns (OrderResponse);
+}
+
 message StrategyExecutionHeader {
   string execution_id = 1;
   string user_id = 2;
@@ -48,4 +53,59 @@ message ExecutionAck {
   bool accepted = 1;
   string message = 2;
   string execution_id = 3;
+}
+
+// ===================== Orders =====================
+enum OrderSide {
+  ORDER_SIDE_UNSPECIFIED = 0;
+  BUY = 1;
+  SELL = 2;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  MARKET = 1;
+  LIMIT = 2;
+  STOP = 3;
+  STOP_LIMIT = 4;
+}
+
+enum TimeInForce {
+  TIF_UNSPECIFIED = 0;
+  DAY = 1;
+  GTC = 2;
+  OPG = 3;
+  CLS = 4;
+  IOC = 5;
+  FOK = 6;
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  NEW = 1;
+  PARTIALLY_FILLED = 2;
+  FILLED = 3;
+  CANCELLED = 4;
+  EXPIRED = 5;
+  REJECTED = 6;
+  PENDING_NEW = 7;
+  PENDING_CANCEL = 8;
+}
+
+message OrderRequest {
+  string user_id = 1;
+  string symbol = 2;
+  double quantity = 3;
+  OrderSide side = 4;
+  OrderType type = 5;
+  TimeInForce time_in_force = 6;
+  double limit_price = 7;
+  double stop_price = 8;
+  bool extended_hours = 9;
+  string client_order_id = 10;
+}
+
+message OrderResponse {
+  string workflow_id = 1;
+  OrderStatus status = 2;
 }
