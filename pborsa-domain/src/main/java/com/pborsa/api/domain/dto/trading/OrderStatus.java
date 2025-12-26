@@ -4,6 +4,7 @@ package com.pborsa.api.domain.dto.trading;
  * Enum representing the status of an order.
  */
 public enum OrderStatus {
+    ACCEPTED_BY_APP,
     /**
      * Order is new and waiting to be processed.
      */

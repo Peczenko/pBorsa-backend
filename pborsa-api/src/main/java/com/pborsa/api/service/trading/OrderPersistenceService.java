@@ -8,14 +8,25 @@ import com.pborsa.api.domain.entity.OrderHistoryEntity;
 import com.pborsa.api.repository.OrderHistoryRepository;
 import com.pborsa.api.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderPersistenceService {
+
+    private static final EnumSet<OrderStatus> TERMINAL_STATUSES = EnumSet.of(
+            OrderStatus.FILLED,
+            OrderStatus.CANCELLED,
+            OrderStatus.EXPIRED,
+            OrderStatus.REJECTED
+    );
 
     private final OrderRepository orderRepository;
     private final OrderHistoryRepository orderHistoryRepository;
@@ -84,15 +95,67 @@ public class OrderPersistenceService {
     public OrderEntity updateStatus(UUID orderId, OrderStatus status, String message) {
         OrderEntity entity = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+        if (entity.getStatus() == status && message == null) {
+            return entity;
+        }
         entity.setStatus(status);
         OrderEntity saved = orderRepository.save(entity);
         createOrderHistory(entity.getUserId(), saved, status, message);
         return saved;
     }
 
+    public boolean updateStatusByExternalIds(String alpacaOrderId,
+                                             String clientOrderId,
+                                             OrderStatus status,
+                                             String message) {
+        Optional<OrderEntity> entity = findByExternalIds(alpacaOrderId, clientOrderId);
+        if (entity.isEmpty()) {
+            log.warn("Order not found for alpacaOrderId={} clientOrderId={}", alpacaOrderId, clientOrderId);
+            return false;
+        }
+        OrderEntity order = entity.get();
+        if (order.getAlpacaOrderId() == null && alpacaOrderId != null) {
+            order.setAlpacaOrderId(alpacaOrderId);
+        }
+        if (order.getClientOrderId() == null && clientOrderId != null) {
+            order.setClientOrderId(clientOrderId);
+        }
+        if (order.getStatus() == status && message == null) {
+            return true;
+        }
+        order.setStatus(status);
+        OrderEntity saved = orderRepository.save(order);
+        createOrderHistory(order.getUserId(), saved, status, message);
+        return true;
+    }
+
+    public boolean hasOpenOrders(String userId) {
+        return orderRepository.countByUserIdAndStatusNotIn(userId, TERMINAL_STATUSES) > 0;
+    }
+
+    public List<String> findUsersWithOpenOrders() {
+        return orderRepository.findDistinctUserIdByStatusNotIn(TERMINAL_STATUSES)
+                .stream()
+                .filter(userId -> userId != null && !userId.isBlank())
+                .toList();
+    }
+
+    private Optional<OrderEntity> findByExternalIds(String alpacaOrderId, String clientOrderId) {
+        if (alpacaOrderId != null && !alpacaOrderId.isBlank()) {
+            Optional<OrderEntity> byAlpaca = orderRepository.findByAlpacaOrderId(alpacaOrderId);
+            if (byAlpaca.isPresent()) {
+                return byAlpaca;
+            }
+        }
+        if (clientOrderId != null && !clientOrderId.isBlank()) {
+            return orderRepository.findByClientOrderId(clientOrderId);
+        }
+        return Optional.empty();
+    }
+
     public OrderEntity createNewOrder(String userId, TradingApiOrderRequest request, String workflowId) {
-        OrderEntity entity = createOrder(userId, request, OrderStatus.NEW, workflowId);
-        createOrderHistory(userId, entity, OrderStatus.NEW, null);
+        OrderEntity entity = createOrder(userId, request, OrderStatus.ACCEPTED_BY_APP, workflowId);
+        createOrderHistory(userId, entity, OrderStatus.ACCEPTED_BY_APP, null);
         return entity;
     }
 
