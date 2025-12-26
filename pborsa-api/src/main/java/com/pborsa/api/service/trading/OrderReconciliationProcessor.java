@@ -79,7 +79,7 @@ public class OrderReconciliationProcessor {
                 orderPersistenceService.updateStatusByExternalIds(
                         remote.orderId(),
                         remote.clientOrderId(),
-                        OrderStatus.CANCELLED,
+                        OrderStatus.CANCELED,
                         MESSAGE_NO_CHANGE_CLOSE
                 );
                 log.info("Reconcile closed order user={} alpacaOrderId={}", userId, remote.orderId());
@@ -115,7 +115,7 @@ public class OrderReconciliationProcessor {
 
     private boolean shouldClose(OrderStatus status) {
         return status != null && switch (status) {
-            case FILLED, CANCELLED, EXPIRED, REJECTED, DONE_FOR_DAY -> false;
+            case FILLED, CANCELED, EXPIRED, REJECTED, DONE_FOR_DAY -> false;
             default -> true;
         };
     }

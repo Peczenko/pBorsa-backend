@@ -57,7 +57,7 @@ public class TradeUpdatesProcessor {
             case NEW -> OrderStatus.NEW;
             case FILL -> OrderStatus.FILLED;
             case PARTIAL_FILL -> OrderStatus.PARTIALLY_FILLED;
-            case CANCELED -> OrderStatus.CANCELLED;
+            case CANCELED -> OrderStatus.CANCELED;
             case EXPIRED -> OrderStatus.EXPIRED;
             case DONE_FOR_DAY -> OrderStatus.DONE_FOR_DAY;
             case REPLACED -> OrderStatus.REPLACED;
