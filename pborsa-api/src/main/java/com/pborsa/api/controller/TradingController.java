@@ -4,8 +4,6 @@ import com.pborsa.api.controller.response.ApiResponse;
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.service.trading.OrderService;
-import com.pborsa.api.service.trading.PositionService;
-import com.pborsa.api.service.trading.TradingFacade;
 import com.pborsa.api.temporal.WorkflowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Controller for trading operations.

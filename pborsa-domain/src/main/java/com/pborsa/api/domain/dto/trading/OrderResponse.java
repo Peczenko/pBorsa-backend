@@ -24,6 +24,7 @@ public record OrderResponse(
         BigDecimal stopPrice,
         BigDecimal filledAveragePrice,
         OrderStatus status,
+        String message,
         Boolean extendedHours,
         Instant createdAt,
         Instant updatedAt,
@@ -70,6 +71,34 @@ public record OrderResponse(
         return filledQuantity
                 .divide(quantity, 4, BigDecimal.ROUND_HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
+    }
+
+    public static OrderResponse buildRejectedOrderResponse(TradingApiOrderRequest request,
+                                                           String clientOrderId,
+                                                           String message) {
+        return OrderResponse.builder()
+                .orderId(null)
+                .clientOrderId(clientOrderId)
+                .symbol(request.symbol())
+                .quantity(request.quantity())
+                .filledQuantity(null)
+                .side(request.side())
+                .type(request.type())
+                .timeInForce(request.timeInForce())
+                .limitPrice(request.limitPrice())
+                .stopPrice(request.stopPrice())
+                .filledAveragePrice(null)
+                .status(OrderStatus.REJECTED)
+                .message(message)
+                .extendedHours(request.extendedHours())
+                .createdAt(null)
+                .updatedAt(null)
+                .submittedAt(null)
+                .filledAt(null)
+                .expiredAt(null)
+                .cancelledAt(null)
+                .assetClass(null)
+                .build();
     }
 }
 

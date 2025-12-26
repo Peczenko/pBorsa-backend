@@ -2,14 +2,13 @@ package com.pborsa.api.service.trading;
 
 import com.pborsa.api.domain.dto.account.PositionDto;
 import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.exception.AlpacaException;
 import com.pborsa.api.service.alpaca.AlpacaClientFactory;
 import com.pborsa.api.service.credentials.UserCredentialsService;
 import com.pborsa.api.service.mapper.AccountMapper;
 import com.pborsa.api.service.mapper.OrderMapper;
-import com.pborsa.api.service.trading.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jacobpeterson.alpaca.AlpacaAPI;
@@ -173,7 +172,7 @@ public class PositionService {
         // For partial closes, we need to use a sell order instead
         try {
             // Use OrderService to place a market sell order for the partial quantity
-            OrderRequest sellRequest = OrderRequest.marketSell(symbol, quantity);
+            TradingApiOrderRequest sellRequest = TradingApiOrderRequest.marketSell(symbol, quantity);
             return orderService.placeOrder(userId, sellRequest);
         } catch (AlpacaException e) {
             throw e;

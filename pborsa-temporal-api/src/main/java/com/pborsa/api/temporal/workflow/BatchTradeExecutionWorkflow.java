@@ -1,6 +1,6 @@
 package com.pborsa.api.temporal.workflow;
 
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
@@ -22,6 +22,6 @@ public interface BatchTradeExecutionWorkflow {
      * @return List of executed order responses
      */
     @WorkflowMethod
-    List<OrderResponse> executeBatchTrades(String userId, List<OrderRequest> orders);
+    List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders);
 }
 

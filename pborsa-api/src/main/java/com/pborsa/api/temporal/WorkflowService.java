@@ -1,8 +1,10 @@
 package com.pborsa.api.temporal;
 
 import com.pborsa.api.domain.dto.market.StockQuoteDto;
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
+import com.pborsa.api.exception.AlpacaException;
+import com.pborsa.api.service.trading.OrderExecutionService;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowStub;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -26,82 +29,36 @@ public class WorkflowService {
     private final WorkflowClient workflowClient;
     private final WorkflowTradingService workflowTradingService;
     private final WorkflowMarketDataService workflowMarketDataService;
+    private final OrderExecutionService orderExecutionService;
 
-    /**
-     * Executes a trade using the Temporal workflow.
-     * Delegates to WorkflowTradingService.
-     *
-     * @param userId       The user ID
-     * @param orderRequest The order request
-     * @return The order response
-     */
-    public OrderResponse executeTrade(String userId, OrderRequest orderRequest) {
-        return workflowTradingService.executeTrade(userId, orderRequest);
+    public OrderResponse executeTrade(String userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
+        return workflowTradingService.executeTrade(userId, orderId, tradingApiOrderRequest);
     }
 
-    /**
-     * Executes a trade asynchronously.
-     */
-    public CompletableFuture<OrderResponse> executeTradeAsync(String userId, OrderRequest orderRequest) {
-        return CompletableFuture.supplyAsync(() -> executeTrade(userId, orderRequest));
-    }
-
-    /**
-     * Executes multiple trades in a batch.
-     * Delegates to WorkflowTradingService.
-     */
-    public List<OrderResponse> executeBatchTrades(String userId, List<OrderRequest> orders) {
+    public List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders) {
         return workflowTradingService.executeBatchTrades(userId, orders);
     }
 
-    /**
-     * Starts a market data polling workflow.
-     * Delegates to WorkflowMarketDataService.
-     *
-     * @param userId          The user ID
-     * @param symbols         Symbols to poll
-     * @param intervalSeconds Polling interval
-     * @return The workflow ID
-     */
     public String startMarketDataPolling(String userId, Set<String> symbols, int intervalSeconds) {
         return workflowMarketDataService.startMarketDataPolling(userId, symbols, intervalSeconds);
     }
 
-    /**
-     * Adds symbols to an existing polling workflow.
-     * Delegates to WorkflowMarketDataService.
-     */
     public void addSymbolsToPolling(String userId, Set<String> symbols) {
         workflowMarketDataService.addSymbolsToPolling(userId, symbols);
     }
 
-    /**
-     * Removes symbols from an existing polling workflow.
-     * Delegates to WorkflowMarketDataService.
-     */
     public void removeSymbolsFromPolling(String userId, Set<String> symbols) {
         workflowMarketDataService.removeSymbolsFromPolling(userId, symbols);
     }
 
-    /**
-     * Gets the latest quotes from a polling workflow.
-     * Delegates to WorkflowMarketDataService.
-     */
     public List<StockQuoteDto> getLatestQuotesFromPolling(String userId) {
         return workflowMarketDataService.getLatestQuotesFromPolling(userId);
     }
 
-    /**
-     * Stops a market data polling workflow.
-     * Delegates to WorkflowMarketDataService.
-     */
     public void stopMarketDataPolling(String userId) {
         workflowMarketDataService.stopMarketDataPolling(userId);
     }
 
-    /**
-     * Cancels any running workflow by ID.
-     */
     public void cancelWorkflow(String workflowId) {
         log.info("Cancelling workflow: {}", workflowId);
         
@@ -109,7 +66,11 @@ public class WorkflowService {
         workflow.cancel();
     }
 
-    public String startTradeAsync(String userId, OrderRequest request) {
-        return workflowTradingService.startTradeAsync(userId, request);
+    public String startTradeAsync(String userId, TradingApiOrderRequest request) {
+        OrderExecutionService.OrderExecutionResult result = orderExecutionService.startExecution(userId, request);
+        if (!result.accepted()) {
+            throw new AlpacaException(AlpacaException.ErrorCode.INVALID_ORDER, result.message());
+        }
+        return result.workflowId();
     }
 }

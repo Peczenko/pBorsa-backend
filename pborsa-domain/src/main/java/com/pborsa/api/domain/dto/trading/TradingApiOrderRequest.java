@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  * Request DTO for placing a new order.
  */
 @Builder
-public record OrderRequest(
+public record TradingApiOrderRequest(
         @NotBlank(message = "Symbol is required")
         @Pattern(regexp = "^[A-Z]{1,5}$", message = "Symbol must be 1-5 uppercase letters")
         String symbol,
@@ -40,8 +40,8 @@ public record OrderRequest(
     /**
      * Creates a market buy order.
      */
-    public static OrderRequest marketBuy(String symbol, BigDecimal quantity) {
-        return OrderRequest.builder()
+    public static TradingApiOrderRequest marketBuy(String symbol, BigDecimal quantity) {
+        return TradingApiOrderRequest.builder()
                 .symbol(symbol)
                 .quantity(quantity)
                 .side(OrderSide.BUY)
@@ -53,8 +53,8 @@ public record OrderRequest(
     /**
      * Creates a market sell order.
      */
-    public static OrderRequest marketSell(String symbol, BigDecimal quantity) {
-        return OrderRequest.builder()
+    public static TradingApiOrderRequest marketSell(String symbol, BigDecimal quantity) {
+        return TradingApiOrderRequest.builder()
                 .symbol(symbol)
                 .quantity(quantity)
                 .side(OrderSide.SELL)
@@ -66,8 +66,8 @@ public record OrderRequest(
     /**
      * Creates a limit buy order.
      */
-    public static OrderRequest limitBuy(String symbol, BigDecimal quantity, BigDecimal limitPrice) {
-        return OrderRequest.builder()
+    public static TradingApiOrderRequest limitBuy(String symbol, BigDecimal quantity, BigDecimal limitPrice) {
+        return TradingApiOrderRequest.builder()
                 .symbol(symbol)
                 .quantity(quantity)
                 .side(OrderSide.BUY)
@@ -80,8 +80,8 @@ public record OrderRequest(
     /**
      * Creates a limit sell order.
      */
-    public static OrderRequest limitSell(String symbol, BigDecimal quantity, BigDecimal limitPrice) {
-        return OrderRequest.builder()
+    public static TradingApiOrderRequest limitSell(String symbol, BigDecimal quantity, BigDecimal limitPrice) {
+        return TradingApiOrderRequest.builder()
                 .symbol(symbol)
                 .quantity(quantity)
                 .side(OrderSide.SELL)

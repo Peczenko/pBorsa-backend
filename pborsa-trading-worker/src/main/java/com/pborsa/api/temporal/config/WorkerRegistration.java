@@ -1,7 +1,5 @@
 package com.pborsa.api.temporal.config;
 
-import com.pborsa.api.temporal.config.TaskQueues;
-import com.pborsa.api.temporal.activity.TradingActivities;
 import com.pborsa.api.temporal.activity.TradingActivitiesImpl;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflowImpl;
 import com.pborsa.api.temporal.workflow.HistoricalMarketDataReplayWorkflowImpl;

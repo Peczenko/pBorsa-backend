@@ -9,6 +9,7 @@ import com.pborsa.api.service.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jacobpeterson.alpaca.AlpacaAPI;
+import net.jacobpeterson.alpaca.openapi.trader.ApiException;
 import net.jacobpeterson.alpaca.openapi.trader.model.Order;
 import net.jacobpeterson.alpaca.openapi.trader.model.PostOrderRequest;
 import net.jacobpeterson.alpaca.openapi.trader.model.OrderSide;
@@ -22,6 +23,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+
+import static com.pborsa.api.domain.dto.trading.OrderResponse.buildRejectedOrderResponse;
 
 /**
  * Service for handling order operations.
@@ -43,16 +46,17 @@ public class OrderService {
      * @param request Order request details
      * @return Order response with order details
      */
-    public OrderResponse placeOrder(String userId, OrderRequest request) {
+    public OrderResponse placeOrder(String userId, TradingApiOrderRequest request) {
         log.info("Placing {} {} order for {} shares of {} for user: {}",
                 request.type(), request.side(), request.quantity(), request.symbol(), userId);
+
+        String clientOrderId = request.clientOrderId() != null
+                ? request.clientOrderId()
+                : UUID.randomUUID().toString();
 
         try {
             AlpacaCredentialsDto credentials = credentialsService.getCredentials(userId);
             AlpacaAPI client = clientFactory.getOrCreateClient(credentials);
-
-            String clientOrderId = request.clientOrderId() != null ?
-                    request.clientOrderId() : UUID.randomUUID().toString();
 
             // Convert domain enums to SDK enums
             OrderSide alpacaSide = convertOrderSide(request.side());
@@ -84,6 +88,18 @@ public class OrderService {
                     request.quantity(), request.symbol(), userId);
 
             return orderMapper.toOrderResponse(order);
+        } catch (ApiException e) {
+            if (isInsufficientFunds(e)) {
+                log.warn("Order rejected due to insufficient funds for user {} symbol {}: {}",
+                        userId, request.symbol(), e.getMessage());
+                return buildRejectedOrderResponse(request, clientOrderId, extractOrderErrorMessage(e));
+            }
+            log.error("Failed to place order for user: {}", userId, e);
+            throw new AlpacaException(
+                    AlpacaException.ErrorCode.ORDER_FAILED,
+                    "Failed to place order: " + e.getMessage(),
+                    e
+            );
         } catch (AlpacaException e) {
             throw e;
         } catch (Exception e) {
@@ -100,7 +116,7 @@ public class OrderService {
      * Async version of placeOrder.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<OrderResponse> placeOrderAsync(String userId, OrderRequest request) {
+    public CompletableFuture<OrderResponse> placeOrderAsync(String userId, TradingApiOrderRequest request) {
         return CompletableFuture.supplyAsync(() -> placeOrder(userId, request));
     }
 
@@ -108,7 +124,7 @@ public class OrderService {
      * Places a market buy order.
      */
     public OrderResponse marketBuy(String userId, String symbol, BigDecimal quantity) {
-        OrderRequest request = OrderRequest.marketBuy(symbol, quantity);
+        TradingApiOrderRequest request = TradingApiOrderRequest.marketBuy(symbol, quantity);
         return placeOrder(userId, request);
     }
 
@@ -116,7 +132,7 @@ public class OrderService {
      * Places a market sell order.
      */
     public OrderResponse marketSell(String userId, String symbol, BigDecimal quantity) {
-        OrderRequest request = OrderRequest.marketSell(symbol, quantity);
+        TradingApiOrderRequest request = TradingApiOrderRequest.marketSell(symbol, quantity);
         return placeOrder(userId, request);
     }
 
@@ -124,7 +140,7 @@ public class OrderService {
      * Places a limit buy order.
      */
     public OrderResponse limitBuy(String userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
-        OrderRequest request = OrderRequest.limitBuy(symbol, quantity, limitPrice);
+        TradingApiOrderRequest request = TradingApiOrderRequest.limitBuy(symbol, quantity, limitPrice);
         return placeOrder(userId, request);
     }
 
@@ -132,7 +148,7 @@ public class OrderService {
      * Places a limit sell order.
      */
     public OrderResponse limitSell(String userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
-        OrderRequest request = OrderRequest.limitSell(symbol, quantity, limitPrice);
+        TradingApiOrderRequest request = TradingApiOrderRequest.limitSell(symbol, quantity, limitPrice);
         return placeOrder(userId, request);
     }
 
@@ -323,4 +339,32 @@ public class OrderService {
         }
         return TimeInForce.valueOf(tif.name());
     }
+
+    private boolean isInsufficientFunds(ApiException exception) {
+        if (exception.getCode() == 403) {
+            return true;
+        }
+        String body = exception.getResponseBody();
+        if (body != null) {
+            String normalized = body.toLowerCase();
+            if (normalized.contains("insufficient") || normalized.contains("buying power")) {
+                return true;
+            }
+        }
+        String message = exception.getMessage();
+        if (message == null) {
+            return false;
+        }
+        String normalizedMessage = message.toLowerCase();
+        return normalizedMessage.contains("insufficient") || normalizedMessage.contains("buying power");
+    }
+
+    private String extractOrderErrorMessage(ApiException exception) {
+        String body = exception.getResponseBody();
+        if (body != null && !body.isBlank()) {
+            return body;
+        }
+        return exception.getMessage();
+    }
+
 }

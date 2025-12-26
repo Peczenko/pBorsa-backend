@@ -40,7 +40,12 @@ public class UserCredentialsService {
      * @return Decrypted credentials DTO
      * @throws CredentialsNotFoundException if credentials don't exist
      */
-    @Cacheable(value = CacheNames.API_CREDENTIALS, key = "#userId")
+    @Cacheable(
+            value = CacheNames.API_CREDENTIALS,
+            key = "#userId",
+            cacheManager = "apiCredentialsCacheManager",
+            sync = true
+    )
     @Transactional(readOnly = true)
     public AlpacaCredentialsDto getCredentials(String userId) {
         // Delegate to internal method to avoid code duplication
