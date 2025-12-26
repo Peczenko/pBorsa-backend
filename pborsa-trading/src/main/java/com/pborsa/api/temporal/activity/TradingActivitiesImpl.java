@@ -3,7 +3,7 @@ package com.pborsa.api.temporal.activity;
 import com.pborsa.api.domain.dto.account.AccountInfoDto;
 import com.pborsa.api.domain.dto.account.PositionDto;
 import com.pborsa.api.domain.dto.market.StockQuoteDto;
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.service.market.MarketDataService;
 import com.pborsa.api.service.trading.AccountService;
@@ -31,9 +31,9 @@ public class TradingActivitiesImpl implements TradingActivities {
     private final MarketDataService marketDataService;
 
     @Override
-    public OrderResponse placeOrder(String userId, OrderRequest orderRequest) {
-        log.info("Activity: Placing order for user {} symbol {}", userId, orderRequest.symbol());
-        return orderService.placeOrder(userId, orderRequest);
+    public OrderResponse placeOrder(String userId, TradingApiOrderRequest tradingApiOrderRequest) {
+        log.info("Activity: Placing order for user {} symbol {}", userId, tradingApiOrderRequest.symbol());
+        return orderService.placeOrder(userId, tradingApiOrderRequest);
     }
 
     @Override
