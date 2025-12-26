@@ -19,15 +19,18 @@ public class OrderExecutionService {
     private final OrderPersistenceService orderPersistenceService;
     private final WorkflowTradingService workflowTradingService;
     private final Executor tradingExecutor;
+    private final TradeUpdatesStreamManager tradeUpdatesStreamManager;
 
     public OrderExecutionService(AccountService accountService,
                                  OrderPersistenceService orderPersistenceService,
                                  WorkflowTradingService workflowTradingService,
-                                 @Qualifier("tradingExecutor") Executor tradingExecutor) {
+                                 @Qualifier("tradingExecutor") Executor tradingExecutor,
+                                 TradeUpdatesStreamManager tradeUpdatesStreamManager) {
         this.accountService = accountService;
         this.orderPersistenceService = orderPersistenceService;
         this.workflowTradingService = workflowTradingService;
         this.tradingExecutor = tradingExecutor;
+        this.tradeUpdatesStreamManager = tradeUpdatesStreamManager;
     }
 
     public OrderExecutionResult startExecution(String userId, TradingApiOrderRequest request) {
@@ -42,6 +45,7 @@ public class OrderExecutionService {
 
         String workflowId = generateTradeWorkflowId(userId);
         OrderEntity pending = orderPersistenceService.createNewOrder(userId, request, workflowId);
+        tradeUpdatesStreamManager.ensureStream(userId);
         tradingExecutor.execute(() -> startWorkflow(userId, pending.getId(), request, workflowId));
 
         log.info("Order execution accepted for user {}, workflowId={}, orderId={}", userId, workflowId, pending.getId());

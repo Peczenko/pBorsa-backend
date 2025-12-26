@@ -2,8 +2,6 @@ package com.pborsa.api.temporal.workflow;
 
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
-import com.pborsa.api.domain.dto.trading.OrderStatus;
-import com.pborsa.api.temporal.activity.OrderStatusUpdateActivity;
 import com.pborsa.api.temporal.config.TaskQueues;
 import com.pborsa.api.temporal.activity.TradingActivities;
 import io.temporal.activity.ActivityOptions;
@@ -22,8 +20,6 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
     private static final Logger log = Workflow.getLogger(TradeExecutionWorkflowImpl.class);
 
     private final TradingActivities tradingActivities;
-    private final OrderStatusUpdateActivity orderStatusUpdateActivity;
-
     public TradeExecutionWorkflowImpl() {
         // Configure retry options for trading activities (following reference project patterns)
         RetryOptions retryOptions = RetryOptions.newBuilder()
@@ -40,14 +36,7 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
                 .setRetryOptions(retryOptions)
                 .build();
 
-        ActivityOptions statusOptions = ActivityOptions.newBuilder()
-                .setStartToCloseTimeout(Duration.ofSeconds(30))
-                .setTaskQueue(TaskQueues.ORDER_STATUS_TASK_QUEUE)
-                .setRetryOptions(retryOptions)
-                .build();
-
         this.tradingActivities = Workflow.newActivityStub(TradingActivities.class, activityOptions);
-        this.orderStatusUpdateActivity = Workflow.newActivityStub(OrderStatusUpdateActivity.class, statusOptions);
     }
 
     @Override
@@ -55,16 +44,6 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
         // Step 1: Place the order
         OrderResponse order = tradingActivities.placeOrder(userId, tradingApiOrderRequest);
 
-        // Step 2: Update order status to PLACED
-        orderStatusUpdateActivity.updateOrderStatus(orderId, order.status(), order.message());
-
         return order;
-    }
-
-    private boolean isTerminalStatus(OrderStatus status) {
-        return status == OrderStatus.FILLED
-                || status == OrderStatus.CANCELLED
-                || status == OrderStatus.EXPIRED
-                || status == OrderStatus.REJECTED;
     }
 }
