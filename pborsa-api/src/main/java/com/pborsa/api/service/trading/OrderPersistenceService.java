@@ -92,7 +92,7 @@ public class OrderPersistenceService {
 
     public OrderEntity createNewOrder(String userId, TradingApiOrderRequest request, String workflowId) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.NEW, workflowId);
-        createOrderHistory(userId, entity, OrderStatus.PENDING_NEW, null);
+        createOrderHistory(userId, entity, OrderStatus.NEW, null);
         return entity;
     }
 
