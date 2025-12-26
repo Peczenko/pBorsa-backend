@@ -3,6 +3,7 @@ package com.pborsa.api.service.credentials;
 import com.pborsa.api.config.cache.CacheNames;
 import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
 import com.pborsa.api.domain.dto.credentials.CredentialsRegistrationRequest;
+import com.pborsa.api.domain.event.CredentialsChangedEvent;
 import com.pborsa.api.domain.entity.UserApiCredentials;
 import com.pborsa.api.exception.CredentialsNotFoundException;
 import com.pborsa.api.repository.UserApiCredentialsRepository;
@@ -10,6 +11,7 @@ import com.pborsa.api.service.alpaca.AlpacaClientFactory;
 import com.pborsa.api.service.encryption.EncryptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -31,6 +33,7 @@ public class UserCredentialsService {
     private final UserApiCredentialsRepository credentialsRepository;
     private final EncryptionService encryptionService;
     private final AlpacaClientFactory alpacaClientFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Retrieves decrypted credentials for a user.
@@ -103,6 +106,8 @@ public class UserCredentialsService {
 
         credentialsRepository.save(entity);
         log.info("Successfully registered credentials for user: {}", userId);
+
+        eventPublisher.publishEvent(new CredentialsChangedEvent(userId, true));
         
         return true;
     }
@@ -121,6 +126,7 @@ public class UserCredentialsService {
         log.info("Deactivating credentials for user: {}", userId);
         credentialsRepository.deactivateByUserId(userId);
         alpacaClientFactory.evictClient(userId);
+        eventPublisher.publishEvent(new CredentialsChangedEvent(userId, false));
     }
 
     /**

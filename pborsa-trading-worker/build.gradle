@@ -14,9 +14,9 @@ dependencies {
     
     // Temporal
     implementation 'io.temporal:temporal-sdk:1.25.2'
-    
+
     // Database
-    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.postgresql:postgresql'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 }
 
