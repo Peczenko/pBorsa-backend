@@ -28,6 +28,12 @@ public class TemporalWorkersConfiguration {
     @Value("${temporal.workers.strategy.max-concurrent-workflows:25}")
     private int strategyMaxConcurrentWorkflows;
 
+    @Value("${temporal.workers.order-status.max-concurrent-activities:20}")
+    private int orderStatusMaxConcurrentActivities;
+
+    @Value("${temporal.workers.order-status.max-concurrent-workflows:5}")
+    private int orderStatusMaxConcurrentWorkflows;
+
     /**
      * Worker for strategy execution task queue.
      * Add more @Bean workers here as new workflows/queues are introduced.
@@ -45,5 +51,20 @@ public class TemporalWorkersConfiguration {
                 .build();
 
         return workerFactory.newWorker(TaskQueues.STRATEGY_EXECUTION_TASK_QUEUE, options);
+    }
+
+    @Bean
+    public Worker orderStatusWorker() {
+        log.info("Creating order status worker for queue: {} with max concurrent activities: {}, workflows: {}",
+                TaskQueues.ORDER_STATUS_TASK_QUEUE, orderStatusMaxConcurrentActivities, orderStatusMaxConcurrentWorkflows);
+
+        WorkerOptions options = WorkerOptions.newBuilder()
+                .setMaxConcurrentWorkflowTaskPollers(2)
+                .setMaxConcurrentActivityTaskPollers(2)
+                .setMaxConcurrentActivityExecutionSize(orderStatusMaxConcurrentActivities)
+                .setMaxConcurrentWorkflowTaskExecutionSize(orderStatusMaxConcurrentWorkflows)
+                .build();
+
+        return workerFactory.newWorker(TaskQueues.ORDER_STATUS_TASK_QUEUE, options);
     }
 }

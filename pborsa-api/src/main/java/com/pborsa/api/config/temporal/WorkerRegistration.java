@@ -1,5 +1,6 @@
 package com.pborsa.api.config.temporal;
 
+import com.pborsa.api.temporal.activity.OrderStatusUpdateActivityImpl;
 import com.pborsa.api.temporal.activity.StrategyExecutionActivitiesImpl;
 import com.pborsa.api.temporal.config.TaskQueues;
 import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflowImpl;
@@ -25,13 +26,18 @@ public class WorkerRegistration {
 
     private final WorkerFactory workerFactory;
     private final Worker strategyExecutionWorker;
+    private final Worker orderStatusWorker;
     private final StrategyExecutionActivitiesImpl activitiesImpl;
+    private final OrderStatusUpdateActivityImpl orderStatusUpdateActivity;
 
     @PostConstruct
     public void register() {
         log.info("Registering strategy execution workflow and activities on queue {}", TaskQueues.STRATEGY_EXECUTION_TASK_QUEUE);
         strategyExecutionWorker.registerWorkflowImplementationTypes(StrategyExecutionWorkflowImpl.class);
         strategyExecutionWorker.registerActivitiesImplementations(activitiesImpl);
+
+        log.info("Registering order status activities on queue {}", TaskQueues.ORDER_STATUS_TASK_QUEUE);
+        orderStatusWorker.registerActivitiesImplementations(orderStatusUpdateActivity);
 
         workerFactory.start();
         log.info("Strategy execution Temporal worker started");

@@ -1,7 +1,7 @@
 package com.pborsa.api.temporal.workflow;
 
 import com.pborsa.api.temporal.config.TaskQueues;
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.temporal.activity.TradingActivities;
 import io.temporal.activity.ActivityOptions;
@@ -39,7 +39,7 @@ public class BatchTradeExecutionWorkflowImpl implements BatchTradeExecutionWorkf
     }
 
     @Override
-    public List<OrderResponse> executeBatchTrades(String userId, List<OrderRequest> orders) {
+    public List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders) {
         boolean canTrade = tradingActivities.validateTradingAllowed(userId);
         if (!canTrade) {
             throw new RuntimeException("Trading is not allowed for user: " + userId);
@@ -47,12 +47,12 @@ public class BatchTradeExecutionWorkflowImpl implements BatchTradeExecutionWorkf
 
         List<OrderResponse> results = new ArrayList<>();
 
-        for (OrderRequest orderRequest : orders) {
+        for (TradingApiOrderRequest tradingApiOrderRequest : orders) {
             try {
-                OrderResponse response = tradingActivities.placeOrder(userId, orderRequest);
+                OrderResponse response = tradingActivities.placeOrder(userId, tradingApiOrderRequest);
                 results.add(response);
             } catch (Exception e) {
-                log.error("Failed to execute order for symbol {}: {}", orderRequest.symbol(), e.getMessage());
+                log.error("Failed to execute order for symbol {}: {}", tradingApiOrderRequest.symbol(), e.getMessage());
             }
         }
 

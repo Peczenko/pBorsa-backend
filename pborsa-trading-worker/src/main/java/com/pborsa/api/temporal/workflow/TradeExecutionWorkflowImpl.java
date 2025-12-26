@@ -1,17 +1,18 @@
 package com.pborsa.api.temporal.workflow;
 
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.domain.dto.trading.OrderStatus;
+import com.pborsa.api.temporal.activity.OrderStatusUpdateActivity;
 import com.pborsa.api.temporal.config.TaskQueues;
 import com.pborsa.api.temporal.activity.TradingActivities;
-import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.util.UUID;
 
 /**
  * Implementation of the trade execution workflow.
@@ -21,6 +22,7 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
     private static final Logger log = Workflow.getLogger(TradeExecutionWorkflowImpl.class);
 
     private final TradingActivities tradingActivities;
+    private final OrderStatusUpdateActivity orderStatusUpdateActivity;
 
     public TradeExecutionWorkflowImpl() {
         // Configure retry options for trading activities (following reference project patterns)
@@ -38,33 +40,23 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
                 .setRetryOptions(retryOptions)
                 .build();
 
+        ActivityOptions statusOptions = ActivityOptions.newBuilder()
+                .setStartToCloseTimeout(Duration.ofSeconds(30))
+                .setTaskQueue(TaskQueues.ORDER_STATUS_TASK_QUEUE)
+                .setRetryOptions(retryOptions)
+                .build();
+
         this.tradingActivities = Workflow.newActivityStub(TradingActivities.class, activityOptions);
+        this.orderStatusUpdateActivity = Workflow.newActivityStub(OrderStatusUpdateActivity.class, statusOptions);
     }
 
     @Override
-    public OrderResponse executeTrade(String userId, OrderRequest orderRequest) {
-        // Step 1: Validate trading is allowed
-//        boolean canTrade = tradingActivities.validateTradingAllowed(userId);
-        boolean canTrade = true; // Placeholder for validation logic
-        if (!canTrade) {
-            throw new RuntimeException("Trading is not allowed for user: " + userId);
-        }
+    public OrderResponse executeTrade(String userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
+        // Step 1: Place the order
+        OrderResponse order = tradingActivities.placeOrder(userId, tradingApiOrderRequest);
 
-        // Step 2: Place the order
-        OrderResponse order = tradingActivities.placeOrder(userId, orderRequest);
-
-        // Step 3: Monitor order status (simple polling)
-//        int maxAttempts = 10;
-//        int attempts = 0;
-//
-//        while (!isTerminalStatus(order.status()) && attempts < maxAttempts) {
-//            // Wait before checking again
-//            Workflow.sleep(Duration.ofSeconds(2));
-//
-//            // Get updated order status
-//            order = tradingActivities.getOrder(userId, order.orderId());
-//            attempts++;
-//        }
+        // Step 2: Update order status to PLACED
+        orderStatusUpdateActivity.updateOrderStatus(orderId, order.status(), order.message());
 
         return order;
     }
@@ -76,4 +68,3 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
                 || status == OrderStatus.REJECTED;
     }
 }
-

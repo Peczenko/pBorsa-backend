@@ -3,7 +3,7 @@ package com.pborsa.api.temporal.activity;
 import com.pborsa.api.domain.dto.account.AccountInfoDto;
 import com.pborsa.api.domain.dto.account.PositionDto;
 import com.pborsa.api.domain.dto.market.StockQuoteDto;
-import com.pborsa.api.domain.dto.trading.OrderRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
@@ -22,7 +22,8 @@ public interface TradingActivities {
      * Places an order.
      */
     @ActivityMethod
-    OrderResponse placeOrder(String userId, OrderRequest orderRequest);
+    OrderResponse placeOrder(String userId, TradingApiOrderRequest tradingApiOrderRequest);
+
 
     /**
      * Cancels an order.
