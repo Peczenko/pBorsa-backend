@@ -39,7 +39,7 @@ public record OrderResponse(
      */
     public boolean isTerminal() {
         return status == OrderStatus.FILLED
-                || status == OrderStatus.CANCELLED
+                || status == OrderStatus.CANCELED
                 || status == OrderStatus.EXPIRED
                 || status == OrderStatus.REJECTED;
     }
