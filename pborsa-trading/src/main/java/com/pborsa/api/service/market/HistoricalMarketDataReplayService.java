@@ -39,7 +39,7 @@ public class HistoricalMarketDataReplayService {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     public String startReplay(String sessionId,
-                              String userId,
+                              Long userId,
                               HistoricalReplayRequest request,
                               String workflowId,
                               Consumer<String> workflowStopper,
@@ -221,16 +221,16 @@ public class HistoricalMarketDataReplayService {
         }
     }
 
-    private String generateReplayId(String userId, String symbol) {
+    private String generateReplayId(Long userId, String symbol) {
         return "replay-%s-%s-%s".formatted(userId, symbol, UUID.randomUUID());
     }
 
-    public record ReplayStopContext(String replayId, String userId, String workflowId) {}
+    public record ReplayStopContext(String replayId, Long userId, String workflowId) {}
 
 
     private static class ReplaySession {
         private final String sessionId;
-        private final String userId;
+        private final Long userId;
         private final String symbol;
         private final Instant start;
         private final Instant end;
@@ -246,7 +246,7 @@ public class HistoricalMarketDataReplayService {
         private ScheduledFuture<?> scheduledTask;
 
         private ReplaySession(String sessionId,
-                              String userId,
+                              Long userId,
                               String symbol,
                               Instant start,
                               Instant end,

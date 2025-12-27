@@ -18,7 +18,7 @@ public class TradeUpdatesProcessor {
     private final OrderPersistenceService orderPersistenceService;
     private final OrderMapper orderMapper;
 
-    public void processUpdate(String userId, TradeUpdate update) {
+    public void processUpdate(Long userId, TradeUpdate update) {
         Order order = update.getOrder();
         String alpacaOrderId = order != null ? order.getId() : null;
         String clientOrderId = order != null ? order.getClientOrderId() : null;

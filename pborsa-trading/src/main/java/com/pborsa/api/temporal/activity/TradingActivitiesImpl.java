@@ -31,55 +31,55 @@ public class TradingActivitiesImpl implements TradingActivities {
     private final MarketDataService marketDataService;
 
     @Override
-    public OrderResponse placeOrder(String userId, TradingApiOrderRequest tradingApiOrderRequest) {
+    public OrderResponse placeOrder(Long userId, TradingApiOrderRequest tradingApiOrderRequest) {
         log.info("Activity: Placing order for user {} symbol {}", userId, tradingApiOrderRequest.symbol());
         return orderService.placeOrder(userId, tradingApiOrderRequest);
     }
 
     @Override
-    public boolean cancelOrder(String userId, String orderId) {
+    public boolean cancelOrder(Long userId, String orderId) {
         log.info("Activity: Cancelling order {} for user {}", orderId, userId);
         return orderService.cancelOrder(userId, orderId);
     }
 
     @Override
-    public OrderResponse getOrder(String userId, String orderId) {
+    public OrderResponse getOrder(Long userId, String orderId) {
         log.debug("Activity: Getting order {} for user {}", orderId, userId);
         return orderService.getOrder(userId, orderId);
     }
 
     @Override
-    public List<OrderResponse> getOpenOrders(String userId) {
+    public List<OrderResponse> getOpenOrders(Long userId) {
         log.debug("Activity: Getting open orders for user {}", userId);
         return orderService.getOpenOrders(userId);
     }
 
     @Override
-    public AccountInfoDto getAccountInfo(String userId) {
+    public AccountInfoDto getAccountInfo(Long userId) {
         log.debug("Activity: Getting account info for user {}", userId);
         return accountService.getAccountInfo(userId);
     }
 
     @Override
-    public List<PositionDto> getPositions(String userId) {
+    public List<PositionDto> getPositions(Long userId) {
         log.debug("Activity: Getting positions for user {}", userId);
         return positionService.getAllPositions(userId);
     }
 
     @Override
-    public OrderResponse closePosition(String userId, String symbol) {
+    public OrderResponse closePosition(Long userId, String symbol) {
         log.info("Activity: Closing position {} for user {}", symbol, userId);
         return positionService.closePosition(userId, symbol);
     }
 
     @Override
-    public List<StockQuoteDto> getQuotes(String userId, Collection<String> symbols) {
+    public List<StockQuoteDto> getQuotes(Long userId, Collection<String> symbols) {
         log.debug("Activity: Getting quotes for user {} symbols {}", userId, symbols);
         return marketDataService.getLatestQuotes(userId, symbols);
     }
 
     @Override
-    public boolean validateTradingAllowed(String userId) {
+    public boolean validateTradingAllowed(Long userId) {
         log.debug("Activity: Validating trading for user {}", userId);
         return accountService.canTrade(userId);
     }

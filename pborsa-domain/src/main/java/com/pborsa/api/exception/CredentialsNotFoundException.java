@@ -5,9 +5,9 @@ package com.pborsa.api.exception;
  */
 public class CredentialsNotFoundException extends AlpacaException {
 
-    public CredentialsNotFoundException(String userId) {
-        super(ErrorCode.CREDENTIALS_NOT_FOUND, 
-              "Alpaca credentials not found for user: " + userId);
+    public CredentialsNotFoundException(Long userId) {
+        super(ErrorCode.CREDENTIALS_NOT_FOUND,
+                "Alpaca credentials not found for user: " + userId);
     }
 }
 

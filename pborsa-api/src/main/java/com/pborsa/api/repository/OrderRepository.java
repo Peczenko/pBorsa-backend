@@ -21,14 +21,13 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
 
     Optional<OrderEntity> findByClientOrderId(String clientOrderId);
 
-    long countByUserIdAndStatusNotIn(String userId, Collection<OrderStatus> terminalStatuses);
+    long countByUserIdAndStatusNotIn(Long userId, Collection<OrderStatus> terminalStatuses);
 
     @Query("""
             select distinct o.userId
             from OrderEntity o
             where o.status not in :terminalStatuses
               and o.userId is not null
-              and o.userId <> ''
             """)
-    List<String> findDistinctUserIdByStatusNotIn(@Param("terminalStatuses") Collection<OrderStatus> terminalStatuses);
+    List<Long> findDistinctUserIdByStatusNotIn(@Param("terminalStatuses") Collection<OrderStatus> terminalStatuses);
 }

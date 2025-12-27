@@ -25,7 +25,7 @@ public class UserApiCredentials {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String userId;
+    private Long userId;
 
     @Column(nullable = false)
     private String apiKeyEncrypted;

@@ -55,7 +55,7 @@ public class MarketDataService {
      * @return Latest quote data
      */
     @Cacheable(value = CacheNames.QUOTES, key = "#symbol")
-    public StockQuoteDto getLatestQuote(String userId, String symbol) {
+    public StockQuoteDto getLatestQuote(Long userId, String symbol) {
         log.debug("Fetching latest quote for symbol: {}", symbol);
 
         try {
@@ -91,7 +91,7 @@ public class MarketDataService {
      * Async version of getLatestQuote.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<StockQuoteDto> getLatestQuoteAsync(String userId, String symbol) {
+    public CompletableFuture<StockQuoteDto> getLatestQuoteAsync(Long userId, String symbol) {
         return CompletableFuture.supplyAsync(() -> getLatestQuote(userId, symbol));
     }
 
@@ -102,7 +102,7 @@ public class MarketDataService {
      * @param symbols Collection of stock symbols
      * @return List of quote data
      */
-    public List<StockQuoteDto> getLatestQuotes(String userId, Collection<String> symbols) {
+    public List<StockQuoteDto> getLatestQuotes(Long userId, Collection<String> symbols) {
         log.debug("Fetching latest quotes for {} symbols", symbols.size());
 
         try {
@@ -138,7 +138,7 @@ public class MarketDataService {
      * Async version of getLatestQuotes.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<List<StockQuoteDto>> getLatestQuotesAsync(String userId, Collection<String> symbols) {
+    public CompletableFuture<List<StockQuoteDto>> getLatestQuotesAsync(Long userId, Collection<String> symbols) {
         return CompletableFuture.supplyAsync(() -> getLatestQuotes(userId, symbols));
     }
 
@@ -150,7 +150,7 @@ public class MarketDataService {
      * @return Latest trade data
      */
     @Cacheable(value = CacheNames.TRADES, key = "#symbol")
-    public StockTradeDto getLatestTrade(String userId, String symbol) {
+    public StockTradeDto getLatestTrade(Long userId, String symbol) {
         log.debug("Fetching latest trade for symbol: {}", symbol);
 
         try {
@@ -186,7 +186,7 @@ public class MarketDataService {
      * Async version of getLatestTrade.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<StockTradeDto> getLatestTradeAsync(String userId, String symbol) {
+    public CompletableFuture<StockTradeDto> getLatestTradeAsync(Long userId, String symbol) {
         return CompletableFuture.supplyAsync(() -> getLatestTrade(userId, symbol));
     }
 
@@ -197,7 +197,7 @@ public class MarketDataService {
      * @param symbols Collection of stock symbols
      * @return List of trade data
      */
-    public List<StockTradeDto> getLatestTrades(String userId, Collection<String> symbols) {
+    public List<StockTradeDto> getLatestTrades(Long userId, Collection<String> symbols) {
         log.debug("Fetching latest trades for {} symbols", symbols.size());
 
         try {
@@ -233,7 +233,7 @@ public class MarketDataService {
      * Async version of getLatestTrades.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<List<StockTradeDto>> getLatestTradesAsync(String userId, Collection<String> symbols) {
+    public CompletableFuture<List<StockTradeDto>> getLatestTradesAsync(Long userId, Collection<String> symbols) {
         return CompletableFuture.supplyAsync(() -> getLatestTrades(userId, symbols));
     }
 
@@ -249,7 +249,7 @@ public class MarketDataService {
      * @param limit     Maximum number of bars
      * @return List of bar data
      */
-    public List<StockBarDto> getHistoricalBars(String userId, String symbol, int timeframe,
+    public List<StockBarDto> getHistoricalBars(Long userId, String symbol, int timeframe,
                                                 String period, ZonedDateTime start, ZonedDateTime end, Integer limit) {
         log.debug("Fetching historical bars for symbol: {} from {} to {}", symbol, start, end);
         try {
@@ -315,7 +315,7 @@ public class MarketDataService {
      * @param symbols Symbols to get data for
      * @return Market data snapshot with quotes and trades
      */
-    public MarketDataSnapshot getMarketDataSnapshot(String userId, Collection<String> symbols) {
+    public MarketDataSnapshot getMarketDataSnapshot(Long userId, Collection<String> symbols) {
         log.debug("Getting market data snapshot for {} symbols", symbols.size());
         
         List<StockQuoteDto> quotes = getLatestQuotes(userId, symbols);
@@ -334,7 +334,7 @@ public class MarketDataService {
      * Async version of getMarketDataSnapshot.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<MarketDataSnapshot> getMarketDataSnapshotAsync(String userId, Collection<String> symbols) {
+    public CompletableFuture<MarketDataSnapshot> getMarketDataSnapshotAsync(Long userId, Collection<String> symbols) {
         return CompletableFuture.supplyAsync(() -> getMarketDataSnapshot(userId, symbols));
     }
 }

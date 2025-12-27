@@ -40,7 +40,7 @@ public class TradeExecutionWorkflowImpl implements TradeExecutionWorkflow {
     }
 
     @Override
-    public OrderResponse executeTrade(String userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
+    public OrderResponse executeTrade(Long userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
         // Step 1: Place the order
         OrderResponse order = tradingActivities.placeOrder(userId, tradingApiOrderRequest);
 

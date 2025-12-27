@@ -32,7 +32,7 @@ public class CredentialsNotificationPublisher {
 
     @EventListener
     public void onCredentialsChanged(CredentialsChangedEvent event) {
-        if (event == null || event.userId() == null || event.userId().isBlank()) {
+        if (event == null || event.userId() == null) {
             log.warn("Skipping credentials notification with empty userId");
             return;
         }
@@ -41,7 +41,7 @@ public class CredentialsNotificationPublisher {
             jdbcTemplate.execute((ConnectionCallback<Object>) connection -> {
                 try (PreparedStatement statement = connection.prepareStatement("select pg_notify(?, ?)")) {
                     statement.setString(1, channel);
-                    statement.setString(2, event.userId());
+                    statement.setString(2, String.valueOf(event.userId()));
                     statement.execute();
                 }
                 return null;

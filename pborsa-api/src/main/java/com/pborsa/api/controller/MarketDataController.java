@@ -34,7 +34,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/quotes")
     public ResponseEntity<ApiResponse<List<StockQuoteDto>>> getQuotes(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         log.debug("Getting quotes for user {} symbols: {}", userId, symbols);
@@ -47,7 +47,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/quotes/{symbol}")
     public ResponseEntity<ApiResponse<StockQuoteDto>> getQuote(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @PathVariable String symbol
     ) {
         StockQuoteDto quote = marketDataService.getLatestQuote(userId, symbol);
@@ -59,7 +59,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/quotes/async")
     public CompletableFuture<ResponseEntity<ApiResponse<List<StockQuoteDto>>>> getQuotesAsync(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         return marketDataService.getLatestQuotesAsync(userId, symbols)
@@ -71,7 +71,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/trades")
     public ResponseEntity<ApiResponse<List<StockTradeDto>>> getTrades(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         List<StockTradeDto> trades = marketDataService.getLatestTrades(userId, symbols);
@@ -83,7 +83,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/bars/{symbol}")
     public ResponseEntity<ApiResponse<List<StockBarDto>>> getBars(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @PathVariable String symbol,
             @RequestParam(defaultValue = "1") int timeframe,
             @RequestParam(defaultValue = "DAY") String period,
@@ -104,7 +104,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/snapshot")
     public ResponseEntity<ApiResponse<MarketDataSnapshot>> getSnapshot(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         MarketDataSnapshot snapshot = marketDataService.getMarketDataSnapshot(userId, symbols);
@@ -116,7 +116,7 @@ public class MarketDataController {
      */
     @GetMapping("/{userId}/snapshot/async")
     public CompletableFuture<ResponseEntity<ApiResponse<MarketDataSnapshot>>> getSnapshotAsync(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         return marketDataService.getMarketDataSnapshotAsync(userId, symbols)
@@ -130,7 +130,7 @@ public class MarketDataController {
      */
     @PostMapping("/{userId}/polling/start")
     public ResponseEntity<ApiResponse<String>> startPolling(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols,
             @RequestParam(defaultValue = "5") int intervalSeconds
     ) {
@@ -144,7 +144,7 @@ public class MarketDataController {
      */
     @PostMapping("/{userId}/polling/symbols")
     public ResponseEntity<ApiResponse<Void>> addSymbolsToPolling(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         workflowService.addSymbolsToPolling(userId, symbols);
@@ -156,7 +156,7 @@ public class MarketDataController {
      */
     @DeleteMapping("/{userId}/polling/symbols")
     public ResponseEntity<ApiResponse<Void>> removeSymbolsFromPolling(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam Set<String> symbols
     ) {
         workflowService.removeSymbolsFromPolling(userId, symbols);
@@ -167,7 +167,7 @@ public class MarketDataController {
      * Gets latest quotes from polling workflow.
      */
     @GetMapping("/{userId}/polling/quotes")
-    public ResponseEntity<ApiResponse<List<StockQuoteDto>>> getPollingQuotes(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<List<StockQuoteDto>>> getPollingQuotes(@PathVariable Long userId) {
         List<StockQuoteDto> quotes = workflowService.getLatestQuotesFromPolling(userId);
         return ResponseEntity.ok(ApiResponse.success(quotes));
     }
@@ -176,7 +176,7 @@ public class MarketDataController {
      * Stops polling workflow.
      */
     @PostMapping("/{userId}/polling/stop")
-    public ResponseEntity<ApiResponse<Void>> stopPolling(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Void>> stopPolling(@PathVariable Long userId) {
         log.info("Stopping market data polling for user {}", userId);
         workflowService.stopMarketDataPolling(userId);
         return ResponseEntity.ok(ApiResponse.success("Polling stopped"));

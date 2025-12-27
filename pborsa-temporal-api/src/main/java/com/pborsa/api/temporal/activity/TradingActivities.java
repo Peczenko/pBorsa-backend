@@ -22,55 +22,55 @@ public interface TradingActivities {
      * Places an order.
      */
     @ActivityMethod
-    OrderResponse placeOrder(String userId, TradingApiOrderRequest tradingApiOrderRequest);
+    OrderResponse placeOrder(Long userId, TradingApiOrderRequest tradingApiOrderRequest);
 
 
     /**
      * Cancels an order.
      */
     @ActivityMethod
-    boolean cancelOrder(String userId, String orderId);
+    boolean cancelOrder(Long userId, String orderId);
 
     /**
      * Gets an order by ID.
      */
     @ActivityMethod
-    OrderResponse getOrder(String userId, String orderId);
+    OrderResponse getOrder(Long userId, String orderId);
 
     /**
      * Gets all open orders.
      */
     @ActivityMethod
-    List<OrderResponse> getOpenOrders(String userId);
+    List<OrderResponse> getOpenOrders(Long userId);
 
     /**
      * Gets account information.
      */
     @ActivityMethod
-    AccountInfoDto getAccountInfo(String userId);
+    AccountInfoDto getAccountInfo(Long userId);
 
     /**
      * Gets all positions.
      */
     @ActivityMethod
-    List<PositionDto> getPositions(String userId);
+    List<PositionDto> getPositions(Long userId);
 
     /**
      * Closes a position.
      */
     @ActivityMethod
-    OrderResponse closePosition(String userId, String symbol);
+    OrderResponse closePosition(Long userId, String symbol);
 
     /**
      * Gets the latest quotes for symbols.
      */
     @ActivityMethod
-    List<StockQuoteDto> getQuotes(String userId, Collection<String> symbols);
+    List<StockQuoteDto> getQuotes(Long userId, Collection<String> symbols);
 
     /**
      * Validates that the user can trade.
      */
     @ActivityMethod
-    boolean validateTradingAllowed(String userId);
+    boolean validateTradingAllowed(Long userId);
 }
 

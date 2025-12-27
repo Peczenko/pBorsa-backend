@@ -37,7 +37,7 @@ public class OrderHistoryEntity {
     private OrderEntity order;
     
     @Column(nullable = false)
-    private String userId;
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

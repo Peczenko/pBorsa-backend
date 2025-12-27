@@ -35,7 +35,7 @@ public class StrategyExecutionWorkflowImpl implements StrategyExecutionWorkflow 
 
     @Override
     public void execute(String executionId,
-                        String userId,
+                        Long userId,
                         String strategyId,
                         String symbol,
                         String timeframe,

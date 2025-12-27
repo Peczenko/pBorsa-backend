@@ -39,11 +39,11 @@ public class RealTimeMarketDataService {
     private final MarketDataMapper marketDataMapper;
 
     // Track active subscriptions per user
-    private final Map<String, Set<String>> userSubscriptions = new ConcurrentHashMap<>();
-    private final Map<String, Consumer<StockQuoteDto>> quoteConsumers = new ConcurrentHashMap<>();
-    private final Map<String, Consumer<StockTradeDto>> tradeConsumers = new ConcurrentHashMap<>();
+    private final Map<Long, Set<String>> userSubscriptions = new ConcurrentHashMap<>();
+    private final Map<Long, Consumer<StockQuoteDto>> quoteConsumers = new ConcurrentHashMap<>();
+    private final Map<Long, Consumer<StockTradeDto>> tradeConsumers = new ConcurrentHashMap<>();
     // Track streaming instances per user
-    private final Map<String, net.jacobpeterson.alpaca.websocket.marketdata.streams.stock.StockMarketDataWebsocketInterface> streamInstances = new ConcurrentHashMap<>();
+    private final Map<Long, net.jacobpeterson.alpaca.websocket.marketdata.streams.stock.StockMarketDataWebsocketInterface> streamInstances = new ConcurrentHashMap<>();
 
     /**
      * Subscribes to real-time quotes for symbols.
@@ -52,7 +52,7 @@ public class RealTimeMarketDataService {
      * @param symbols       Stock symbols to subscribe to
      * @param quoteConsumer Callback for quote updates
      */
-    public void subscribeToQuotes(String userId, Set<String> symbols,
+    public void subscribeToQuotes(Long userId, Set<String> symbols,
                                   Consumer<StockQuoteDto> quoteConsumer) {
         log.info("Subscribing to quotes for symbols {} for user: {}", symbols, userId);
 
@@ -145,7 +145,7 @@ public class RealTimeMarketDataService {
      * @param symbols       Stock symbols to subscribe to
      * @param tradeConsumer Callback for trade updates
      */
-    public void subscribeToTrades(String userId, Set<String> symbols,
+    public void subscribeToTrades(Long userId, Set<String> symbols,
                                   Consumer<StockTradeDto> tradeConsumer) {
         log.info("Subscribing to trades for symbols {} for user: {}", symbols, userId);
 
@@ -237,7 +237,7 @@ public class RealTimeMarketDataService {
      * @param userId  User ID
      * @param symbols Symbols to unsubscribe from
      */
-    public void unsubscribe(String userId, Set<String> symbols) {
+    public void unsubscribe(Long userId, Set<String> symbols) {
         log.info("Unsubscribing from symbols {} for user: {}", symbols, userId);
 
         try {
@@ -285,7 +285,7 @@ public class RealTimeMarketDataService {
      *
      * @param userId User ID
      */
-    public void disconnect(String userId) {
+    public void disconnect(Long userId) {
         log.info("Disconnecting streaming for user: {}", userId);
 
         try {
@@ -310,14 +310,14 @@ public class RealTimeMarketDataService {
     /**
      * Gets current subscriptions for a user.
      */
-    public Set<String> getSubscriptions(String userId) {
+    public Set<String> getSubscriptions(Long userId) {
         return userSubscriptions.getOrDefault(userId, Collections.emptySet());
     }
 
     /**
      * Checks if a user is subscribed to any symbols.
      */
-    public boolean hasActiveSubscriptions(String userId) {
+    public boolean hasActiveSubscriptions(Long userId) {
         Set<String> subs = userSubscriptions.get(userId);
         return subs != null && !subs.isEmpty();
     }

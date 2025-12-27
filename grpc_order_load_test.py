@@ -32,7 +32,7 @@ def main():
     parser.add_argument("--workers", type=int, default=50, help="Thread pool size")
     parser.add_argument("--duration", type=float, default=10.0, help="Total duration to spread requests (seconds)")
     parser.add_argument("--timeout", type=float, default=10.0, help="Per-request timeout (seconds)")
-    parser.add_argument("--user-id", default="1", help="User id")
+    parser.add_argument("--user-id", type=int, default=1, help="User id")
     parser.add_argument(
         "--symbols",
         default="AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,AMD,NFLX,INTC",

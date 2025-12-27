@@ -44,11 +44,11 @@ public class OrderReconciliationScheduler {
             return;
         }
 
-        Map<String, List<OrderEntity>> byUser = candidates.stream()
+        Map<Long, List<OrderEntity>> byUser = candidates.stream()
                 .collect(Collectors.groupingBy(OrderEntity::getUserId));
 
         for (var entry : byUser.entrySet()) {
-            String userId = entry.getKey();
+            Long userId = entry.getKey();
             List<OrderEntity> orders = entry.getValue();
             tradingExecutor.execute(() -> processor.reconcileUser(userId, orders, till));
         }

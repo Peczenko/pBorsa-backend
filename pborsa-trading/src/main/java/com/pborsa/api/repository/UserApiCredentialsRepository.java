@@ -19,12 +19,12 @@ public interface UserApiCredentialsRepository extends JpaRepository<UserApiCrede
     /**
      * Finds credentials by user ID.
      */
-    Optional<UserApiCredentials> findByUserId(String userId);
+    Optional<UserApiCredentials> findByUserId(Long userId);
 
     /**
      * Checks if credentials exist for a user.
      */
-    boolean existsByUserId(String userId);
+    boolean existsByUserId(Long userId);
 
     /**
      * Finds all active credentials.
@@ -41,11 +41,11 @@ public interface UserApiCredentialsRepository extends JpaRepository<UserApiCrede
      */
     @Modifying
     @Query("UPDATE UserApiCredentials c SET c.active = false WHERE c.userId = :userId")
-    int deactivateByUserId(@Param("userId") String userId);
+    int deactivateByUserId(@Param("userId") Long userId);
 
     /**
      * Deletes credentials by user ID.
      */
-    void deleteByUserId(String userId);
+    void deleteByUserId(Long userId);
 }
 

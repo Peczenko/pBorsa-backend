@@ -19,7 +19,7 @@ service TradingOrderService {
 
 message StrategyExecutionHeader {
   string execution_id = 1;
-  string user_id = 2;
+  int64 user_id = 2;
   string strategy_id = 3;
   string symbol = 4;
   string timeframe = 5;
@@ -93,7 +93,7 @@ enum OrderStatus {
 }
 
 message OrderRequest {
-  string user_id = 1;
+  int64 user_id = 1;
   string symbol = 2;
   double quantity = 3;
   OrderSide side = 4;

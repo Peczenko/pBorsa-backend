@@ -15,7 +15,7 @@ public class HistoricalMarketDataReplayWorkflowImpl implements HistoricalMarketD
     private Instant endTime;
 
     @Override
-    public void startReplay(String userId,
+    public void startReplay(Long userId,
                             String symbol,
                             Instant startTime,
                             Instant endTime,

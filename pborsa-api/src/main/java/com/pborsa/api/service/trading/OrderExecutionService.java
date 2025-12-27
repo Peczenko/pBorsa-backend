@@ -33,7 +33,7 @@ public class OrderExecutionService {
         this.tradeUpdatesStreamManager = tradeUpdatesStreamManager;
     }
 
-    public OrderExecutionResult startExecution(String userId, TradingApiOrderRequest request) {
+    public OrderExecutionResult startExecution(Long userId, TradingApiOrderRequest request) {
         if (!accountService.canTrade(userId)) {
             OrderEntity rejected = orderPersistenceService.createRejectedOrder(
                     userId,
@@ -52,7 +52,7 @@ public class OrderExecutionService {
         return OrderExecutionResult.accepted(workflowId, pending.getId().toString());
     }
 
-    private void startWorkflow(String userId, UUID orderId, TradingApiOrderRequest request, String workflowId) {
+    private void startWorkflow(Long userId, UUID orderId, TradingApiOrderRequest request, String workflowId) {
         try {
             workflowTradingService.startTradeAsync(userId, orderId, request, workflowId);
         } catch (Exception e) {
@@ -62,7 +62,7 @@ public class OrderExecutionService {
         }
     }
 
-    private String generateTradeWorkflowId(String userId) {
+    private String generateTradeWorkflowId(Long userId) {
         return "trade-%s-%s".formatted(userId, UUID.randomUUID());
     }
 

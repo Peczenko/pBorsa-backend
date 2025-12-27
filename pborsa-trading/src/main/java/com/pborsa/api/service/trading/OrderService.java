@@ -46,7 +46,7 @@ public class OrderService {
      * @param request Order request details
      * @return Order response with order details
      */
-    public OrderResponse placeOrder(String userId, TradingApiOrderRequest request) {
+    public OrderResponse placeOrder(Long userId, TradingApiOrderRequest request) {
         log.info("Placing {} {} order for {} shares of {} for user: {}",
                 request.type(), request.side(), request.quantity(), request.symbol(), userId);
 
@@ -116,14 +116,14 @@ public class OrderService {
      * Async version of placeOrder.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<OrderResponse> placeOrderAsync(String userId, TradingApiOrderRequest request) {
+    public CompletableFuture<OrderResponse> placeOrderAsync(Long userId, TradingApiOrderRequest request) {
         return CompletableFuture.supplyAsync(() -> placeOrder(userId, request));
     }
 
     /**
      * Places a market buy order.
      */
-    public OrderResponse marketBuy(String userId, String symbol, BigDecimal quantity) {
+    public OrderResponse marketBuy(Long userId, String symbol, BigDecimal quantity) {
         TradingApiOrderRequest request = TradingApiOrderRequest.marketBuy(symbol, quantity);
         return placeOrder(userId, request);
     }
@@ -131,7 +131,7 @@ public class OrderService {
     /**
      * Places a market sell order.
      */
-    public OrderResponse marketSell(String userId, String symbol, BigDecimal quantity) {
+    public OrderResponse marketSell(Long userId, String symbol, BigDecimal quantity) {
         TradingApiOrderRequest request = TradingApiOrderRequest.marketSell(symbol, quantity);
         return placeOrder(userId, request);
     }
@@ -139,7 +139,7 @@ public class OrderService {
     /**
      * Places a limit buy order.
      */
-    public OrderResponse limitBuy(String userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
+    public OrderResponse limitBuy(Long userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
         TradingApiOrderRequest request = TradingApiOrderRequest.limitBuy(symbol, quantity, limitPrice);
         return placeOrder(userId, request);
     }
@@ -147,7 +147,7 @@ public class OrderService {
     /**
      * Places a limit sell order.
      */
-    public OrderResponse limitSell(String userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
+    public OrderResponse limitSell(Long userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
         TradingApiOrderRequest request = TradingApiOrderRequest.limitSell(symbol, quantity, limitPrice);
         return placeOrder(userId, request);
     }
@@ -155,7 +155,7 @@ public class OrderService {
     /**
      * Gets all orders for a user with optional filters.
      */
-    public List<OrderResponse> getOrders(String userId, String status, Integer limit, 
+    public List<OrderResponse> getOrders(Long userId, String status, Integer limit, 
                                           ZonedDateTime after, ZonedDateTime until, boolean nested) {
         log.debug("Fetching orders for user: {}", userId);
 
@@ -193,7 +193,7 @@ public class OrderService {
     /**
      * Gets open orders for a user.
      */
-    public List<OrderResponse> getOpenOrders(String userId) {
+    public List<OrderResponse> getOpenOrders(Long userId) {
         return getOrders(userId, "open", null, null, null, false);
     }
 
@@ -201,14 +201,14 @@ public class OrderService {
      * Async version of getOrders.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<List<OrderResponse>> getOrdersAsync(String userId) {
+    public CompletableFuture<List<OrderResponse>> getOrdersAsync(Long userId) {
         return CompletableFuture.supplyAsync(() -> getOrders(userId, null, null, null, null, false));
     }
 
     /**
      * Gets a specific order by ID.
      */
-    public OrderResponse getOrder(String userId, String orderId) {
+    public OrderResponse getOrder(Long userId, String orderId) {
         log.debug("Fetching order {} for user: {}", orderId, userId);
 
         try {
@@ -236,7 +236,7 @@ public class OrderService {
      *
      * @return true if cancellation was successful
      */
-    public boolean cancelOrder(String userId, String orderId) {
+    public boolean cancelOrder(Long userId, String orderId) {
         log.info("Canceling order {} for user: {}", orderId, userId);
 
         try {
@@ -264,7 +264,7 @@ public class OrderService {
      * Async version of cancelOrder.
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<Boolean> cancelOrderAsync(String userId, String orderId) {
+    public CompletableFuture<Boolean> cancelOrderAsync(Long userId, String orderId) {
         return CompletableFuture.supplyAsync(() -> cancelOrder(userId, orderId));
     }
 
@@ -273,7 +273,7 @@ public class OrderService {
      *
      * @return number of orders canceled
      */
-    public int cancelAllOrders(String userId) {
+    public int cancelAllOrders(Long userId) {
         log.info("Canceling all orders for user: {}", userId);
 
         try {

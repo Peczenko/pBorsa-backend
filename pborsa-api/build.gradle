@@ -41,6 +41,9 @@ dependencies {
 
     // Alpaca SDK (used directly in strategy execution orchestrator)
     implementation 'net.jacobpeterson.alpaca:alpaca-java:10.0.1'
+
+    // Firebase Admin SDK (token verification)
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
 }
 
 springBoot {

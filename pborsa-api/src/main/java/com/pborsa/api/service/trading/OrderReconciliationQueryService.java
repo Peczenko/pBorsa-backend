@@ -26,7 +26,7 @@ public class OrderReconciliationQueryService {
     public List<OrderEntity> findCandidates(Instant end) {
         return orderRepository.findByUpdatedAtBeforeAndStatusNotIn(end, TERMINAL_STATUSES)
                 .stream()
-                .filter(order -> order.getUserId() != null && !order.getUserId().isBlank())
+                .filter(order -> order.getUserId() != null)
                 .toList();
     }
 }

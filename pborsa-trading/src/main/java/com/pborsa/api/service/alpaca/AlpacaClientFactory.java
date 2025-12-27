@@ -85,7 +85,7 @@ public class AlpacaClientFactory {
      * @param userId The user ID whose client should be evicted
      */
     @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
-    public void evictClient(String userId) {
+    public void evictClient(Long userId) {
         log.info("Evicted Alpaca API client from cache for user: {}", userId);
     }
 

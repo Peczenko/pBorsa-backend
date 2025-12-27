@@ -29,7 +29,7 @@ public class TradingController {
     // ==================== Orders ====================
     @PostMapping("/{userId}/orders/workflow")
     public ResponseEntity<ApiResponse<Map<String, String>>> placeOrderWithWorkflow(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @Valid @RequestBody TradingApiOrderRequest request
     ) {
         log.info("Placing order via workflow for user {}", userId);
@@ -42,7 +42,7 @@ public class TradingController {
      */
     @GetMapping("/{userId}/orders/{orderId}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrder(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @PathVariable String orderId
     ) {
         OrderResponse order = orderService.getOrder(userId, orderId);
@@ -54,7 +54,7 @@ public class TradingController {
      */
     @GetMapping("/{userId}/orders")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getOrders(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "100") Integer limit
     ) {

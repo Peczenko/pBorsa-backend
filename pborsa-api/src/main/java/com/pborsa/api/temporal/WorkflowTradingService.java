@@ -40,7 +40,7 @@ public class WorkflowTradingService extends TemporalAwareService {
      * @param tradingApiOrderRequest The order request
      * @return The order response
      */
-    public OrderResponse executeTrade(String userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
+    public OrderResponse executeTrade(Long userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
         log.info("Starting trade execution workflow for user {} symbol {}", userId, tradingApiOrderRequest.symbol());
 
         return runWithTemporalOrElse(
@@ -63,7 +63,7 @@ public class WorkflowTradingService extends TemporalAwareService {
      * @param orders List of orders to execute
      * @return List of order responses
      */
-    public List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders) {
+    public List<OrderResponse> executeBatchTrades(Long userId, List<TradingApiOrderRequest> orders) {
         log.info("Starting batch trade execution workflow for user {} with {} orders", userId, orders.size());
 
         return runWithTemporalOrElse(
@@ -82,18 +82,18 @@ public class WorkflowTradingService extends TemporalAwareService {
     /**
      * Generates a workflow ID for trade execution.
      */
-    private String generateTradeWorkflowId(String userId) {
+    private String generateTradeWorkflowId(Long userId) {
         return "trade-%s-%s".formatted(userId, UUID.randomUUID());
     }
 
     /**
      * Generates a workflow ID for batch trade execution.
      */
-    private String generateBatchTradeWorkflowId(String userId) {
+    private String generateBatchTradeWorkflowId(Long userId) {
         return "batch-trade-%s-%s".formatted(userId, UUID.randomUUID());
     }
 
-    public void startTradeAsync(String userId, UUID orderId, TradingApiOrderRequest request, String workflowId) {
+    public void startTradeAsync(Long userId, UUID orderId, TradingApiOrderRequest request, String workflowId) {
         runWithTemporalOrElse(
                 () -> {
                     TradeExecutionWorkflow wf = tradeExecutionWorkflowProvider.apply(workflowId);

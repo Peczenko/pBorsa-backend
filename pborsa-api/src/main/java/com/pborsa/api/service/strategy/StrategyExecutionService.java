@@ -32,7 +32,7 @@ public class StrategyExecutionService {
     private final UserCredentialsService credentialsService;
     private final WorkflowStrategyExecutionService workflowStrategyExecutionService;
 
-    public StrategyExecutionStartResponse startStrategyExecution(String userId,
+    public StrategyExecutionStartResponse startStrategyExecution(Long userId,
                                                                  String strategyId,
                                                                  StrategyExecutionStartRequest request) {
         ensureStrategyExists(strategyId);

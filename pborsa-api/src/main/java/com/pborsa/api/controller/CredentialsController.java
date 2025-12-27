@@ -29,7 +29,7 @@ public class CredentialsController {
     @PostMapping("/{userId}")
     @Operation(summary = "Register credentials", description = "Creates or updates Alpaca API keys for the user")
     public ResponseEntity<ApiResponse<Boolean>> registerCredentials(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @Valid @RequestBody CredentialsRegistrationRequest request
     ) {
         log.info("Registering credentials for user: {}", userId);
@@ -48,7 +48,7 @@ public class CredentialsController {
      */
     @GetMapping("/{userId}/status")
     @Operation(summary = "Check credentials status", description = "Returns true if credentials are present and active")
-    public ResponseEntity<ApiResponse<Boolean>> hasCredentials(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Boolean>> hasCredentials(@PathVariable Long userId) {
         boolean hasCredentials = credentialsService.hasCredentials(userId);
         return ResponseEntity.ok(ApiResponse.success(hasCredentials));
     }
@@ -58,7 +58,7 @@ public class CredentialsController {
      */
     @DeleteMapping("/{userId}")
     @Operation(summary = "Deactivate credentials", description = "Soft-deactivates stored keys for the user")
-    public ResponseEntity<ApiResponse<Void>> deactivateCredentials(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Void>> deactivateCredentials(@PathVariable Long userId) {
         log.info("Deactivating credentials for user: {}", userId);
         credentialsService.deactivateCredentials(userId);
         return ResponseEntity.ok(ApiResponse.success("Credentials deactivated successfully"));
@@ -69,7 +69,7 @@ public class CredentialsController {
      */
     @PostMapping("/{userId}/refresh")
     @Operation(summary = "Refresh credentials cache", description = "Reloads cached credentials from storage")
-    public ResponseEntity<ApiResponse<Void>> refreshCredentials(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Void>> refreshCredentials(@PathVariable Long userId) {
         credentialsService.refreshCredentials(userId);
         return ResponseEntity.ok(ApiResponse.success("Credentials cache refreshed"));
     }

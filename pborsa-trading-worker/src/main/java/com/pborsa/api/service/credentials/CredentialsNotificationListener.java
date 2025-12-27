@@ -93,24 +93,32 @@
             }
         }
 
-        private void handleNotification(String payload) {
-            String userId = payload == null ? "" : payload.trim();
-            if (userId.isEmpty()) {
-                log.warn("Received credentials update notification with empty userId");
-                return;
-            }
-
-            try {
-                alpacaClientFactory.evictClient(userId);
-                credentialsService.refreshCredentials(userId);
-                log.info("Refreshed credentials cache for user {}", userId);
-            } catch (CredentialsNotFoundException e) {
-                alpacaClientFactory.evictClient(userId);
-                log.info("Credentials missing for user {}, evicted caches", userId);
-            } catch (Exception e) {
-                log.error("Failed to refresh credentials cache for user {}", userId, e);
-            }
+    private void handleNotification(String payload) {
+        String trimmed = payload == null ? "" : payload.trim();
+        if (trimmed.isEmpty()) {
+            log.warn("Received credentials update notification with empty userId");
+            return;
         }
+
+        Long userId;
+        try {
+            userId = Long.valueOf(trimmed);
+        } catch (NumberFormatException e) {
+            log.warn("Received credentials update notification with invalid userId payload {}", trimmed, e);
+            return;
+        }
+
+        try {
+            alpacaClientFactory.evictClient(userId);
+            credentialsService.refreshCredentials(userId);
+            log.info("Refreshed credentials cache for user {}", userId);
+        } catch (CredentialsNotFoundException e) {
+            alpacaClientFactory.evictClient(userId);
+            log.info("Credentials missing for user {}, evicted caches", userId);
+        } catch (Exception e) {
+            log.error("Failed to refresh credentials cache for user {}", userId, e);
+        }
+    }
 
         private void closeConnection() {
             if (activeConnection != null) {

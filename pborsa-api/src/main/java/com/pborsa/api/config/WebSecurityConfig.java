@@ -1,5 +1,7 @@
-package com.pborsa.api.config.security;
+package com.pborsa.api.config;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.pborsa.api.security.FirebaseAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -7,27 +9,36 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * Web Security Configuration.
- * Currently configured to disable all security for development purposes.
- * TODO: Re-enable security with proper JWT authentication for production.
+ * Uses Firebase ID tokens for authentication.
  */
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, FirebaseAuth firebaseAuth) throws Exception {
+        FirebaseAuthenticationFilter firebaseFilter = new FirebaseAuthenticationFilter(firebaseAuth);
+
         http
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
-                        .anyRequest().permitAll()  // Allow all requests for now
-                );
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/actuator/health",
+                                "/actuator/info"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(firebaseFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -34,7 +34,7 @@ public class OrderEntity {
     private UUID id;
 
     @Column(nullable = false)
-    private String userId;
+    private Long userId;
 
     private String workflowId;
     private String alpacaOrderId;
