@@ -31,7 +31,7 @@ public class OrderPersistenceService {
     private final OrderRepository orderRepository;
     private final OrderHistoryRepository orderHistoryRepository;
 
-    private OrderEntity createOrder(String userId,
+    private OrderEntity createOrder(Long userId,
                                     TradingApiOrderRequest request,
                                     OrderStatus status,
                                     String workflowId) {
@@ -52,7 +52,7 @@ public class OrderPersistenceService {
         return orderRepository.save(entity);
     }
 
-    public void createOrderHistory(String userId, OrderEntity entity, OrderStatus status, String message) {
+    public void createOrderHistory(Long userId, OrderEntity entity, OrderStatus status, String message) {
         OrderHistoryEntity history = new OrderHistoryEntity()
                 .setOrder(entity)
                 .setUserId(userId)
@@ -129,14 +129,14 @@ public class OrderPersistenceService {
         return true;
     }
 
-    public boolean hasOpenOrders(String userId) {
+    public boolean hasOpenOrders(Long userId) {
         return orderRepository.countByUserIdAndStatusNotIn(userId, TERMINAL_STATUSES) > 0;
     }
 
-    public List<String> findUsersWithOpenOrders() {
+    public List<Long> findUsersWithOpenOrders() {
         return orderRepository.findDistinctUserIdByStatusNotIn(TERMINAL_STATUSES)
                 .stream()
-                .filter(userId -> userId != null && !userId.isBlank())
+                .filter(userId -> userId != null)
                 .toList();
     }
 
@@ -153,13 +153,13 @@ public class OrderPersistenceService {
         return Optional.empty();
     }
 
-    public OrderEntity createNewOrder(String userId, TradingApiOrderRequest request, String workflowId) {
+    public OrderEntity createNewOrder(Long userId, TradingApiOrderRequest request, String workflowId) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.ACCEPTED_BY_APP, workflowId);
         createOrderHistory(userId, entity, OrderStatus.ACCEPTED_BY_APP, null);
         return entity;
     }
 
-    public OrderEntity createRejectedOrder(String userId, TradingApiOrderRequest request, String message) {
+    public OrderEntity createRejectedOrder(Long userId, TradingApiOrderRequest request, String message) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.REJECTED, null);
         createOrderHistory(userId, entity, OrderStatus.REJECTED, message);
         return entity;

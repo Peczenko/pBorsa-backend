@@ -13,7 +13,7 @@ public interface StrategyExecutionWorkflow {
 
     @WorkflowMethod
     void execute(String executionId,
-                 String userId,
+                 Long userId,
                  String strategyId,
                  String symbol,
                  String timeframe,

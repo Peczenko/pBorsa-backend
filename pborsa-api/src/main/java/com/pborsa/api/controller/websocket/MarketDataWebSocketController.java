@@ -29,7 +29,7 @@ public class MarketDataWebSocketController {
      */
     @MessageMapping("/subscribe/quotes/{userId}")
     public void subscribeToQuotes(
-            @DestinationVariable String userId,
+            @DestinationVariable Long userId,
             @Payload Set<String> symbols
     ) {
         log.info("WebSocket: User {} subscribing to quotes for: {}", userId, symbols);
@@ -44,7 +44,7 @@ public class MarketDataWebSocketController {
      */
     @MessageMapping("/subscribe/trades/{userId}")
     public void subscribeToTrades(
-            @DestinationVariable String userId,
+            @DestinationVariable Long userId,
             @Payload Set<String> symbols
     ) {
         log.info("WebSocket: User {} subscribing to trades for: {}", userId, symbols);
@@ -60,7 +60,7 @@ public class MarketDataWebSocketController {
      */
     @MessageMapping("/unsubscribe/{userId}")
     public void unsubscribe(
-            @DestinationVariable String userId,
+            @DestinationVariable Long userId,
             @Payload Set<String> symbols
     ) {
         log.info("WebSocket: User {} unsubscribing from: {}", userId, symbols);
@@ -71,7 +71,7 @@ public class MarketDataWebSocketController {
      * Disconnects user's WebSocket connection.
      */
     @MessageMapping("/disconnect/{userId}")
-    public void disconnect(@DestinationVariable String userId) {
+    public void disconnect(@DestinationVariable Long userId) {
         log.info("WebSocket: User {} disconnecting", userId);
         realTimeMarketDataService.disconnect(userId);
     }
@@ -79,7 +79,7 @@ public class MarketDataWebSocketController {
     /**
      * Sends a quote to a specific user.
      */
-    private void sendQuoteToUser(String userId, StockQuoteDto quote) {
+    private void sendQuoteToUser(Long userId, StockQuoteDto quote) {
         messagingTemplate.convertAndSend(
                 "/topic/quotes/" + userId,
                 quote
@@ -89,7 +89,7 @@ public class MarketDataWebSocketController {
     /**
      * Sends a trade to a specific user.
      */
-    private void sendTradeToUser(String userId, StockTradeDto trade) {
+    private void sendTradeToUser(Long userId, StockTradeDto trade) {
         messagingTemplate.convertAndSend(
                 "/topic/trades/" + userId,
                 trade

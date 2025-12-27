@@ -46,7 +46,7 @@ public class MarketDataPollingWorkflowImpl implements MarketDataPollingWorkflow 
     }
 
     @Override
-    public void startPolling(String userId, Set<String> initialSymbols, int intervalSeconds) {
+    public void startPolling(Long userId, Set<String> initialSymbols, int intervalSeconds) {
         this.symbols = new HashSet<>(initialSymbols);
         
         while (running && !symbols.isEmpty()) {

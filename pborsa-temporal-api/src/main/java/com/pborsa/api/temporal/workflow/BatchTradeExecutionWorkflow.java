@@ -22,6 +22,6 @@ public interface BatchTradeExecutionWorkflow {
      * @return List of executed order responses
      */
     @WorkflowMethod
-    List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders);
+    List<OrderResponse> executeBatchTrades(Long userId, List<TradingApiOrderRequest> orders);
 }
 

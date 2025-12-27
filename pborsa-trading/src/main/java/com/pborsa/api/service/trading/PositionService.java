@@ -42,7 +42,7 @@ public class PositionService {
      * @param userId User ID
      * @return List of positions
      */
-    public List<PositionDto> getAllPositions(String userId) {
+    public List<PositionDto> getAllPositions(Long userId) {
         log.debug("Fetching all positions for user: {}", userId);
 
         try {
@@ -74,7 +74,7 @@ public class PositionService {
      * @return CompletableFuture with list of positions
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<List<PositionDto>> getAllPositionsAsync(String userId) {
+    public CompletableFuture<List<PositionDto>> getAllPositionsAsync(Long userId) {
         return CompletableFuture.supplyAsync(() -> getAllPositions(userId));
     }
 
@@ -85,7 +85,7 @@ public class PositionService {
      * @param symbol Stock symbol
      * @return Optional containing the position if found
      */
-    public Optional<PositionDto> getPositionBySymbol(String userId, String symbol) {
+    public Optional<PositionDto> getPositionBySymbol(Long userId, String symbol) {
         log.debug("Fetching position for symbol {} for user: {}", symbol, userId);
 
         try {
@@ -117,7 +117,7 @@ public class PositionService {
      * @return Position DTO
      * @throws AlpacaException if position not found
      */
-    public PositionDto getPosition(String userId, String symbol) {
+    public PositionDto getPosition(Long userId, String symbol) {
         return getPositionBySymbol(userId, symbol)
                 .orElseThrow(() -> new AlpacaException(
                         AlpacaException.ErrorCode.SYMBOL_NOT_FOUND,
@@ -132,7 +132,7 @@ public class PositionService {
      * @param symbol Stock symbol to close
      * @return Order response for the close order
      */
-    public OrderResponse closePosition(String userId, String symbol) {
+    public OrderResponse closePosition(Long userId, String symbol) {
         log.info("Closing position for symbol {} for user: {}", symbol, userId);
 
         try {
@@ -166,7 +166,7 @@ public class PositionService {
      * @param quantity Number of shares to close
      * @return Order response for the close order
      */
-    public OrderResponse closePartialPosition(String userId, String symbol, BigDecimal quantity) {
+    public OrderResponse closePartialPosition(Long userId, String symbol, BigDecimal quantity) {
         log.info("Closing {} shares of {} for user: {}", quantity, symbol, userId);
         
         // For partial closes, we need to use a sell order instead
@@ -194,7 +194,7 @@ public class PositionService {
      * @return CompletableFuture with order response
      */
     @Async("alpacaAsyncExecutor")
-    public CompletableFuture<OrderResponse> closePositionAsync(String userId, String symbol) {
+    public CompletableFuture<OrderResponse> closePositionAsync(Long userId, String symbol) {
         return CompletableFuture.supplyAsync(() -> closePosition(userId, symbol));
     }
 
@@ -205,7 +205,7 @@ public class PositionService {
      * @param cancelOrders Whether to cancel open orders as well
      * @return List of order responses for the close orders
      */
-    public List<OrderResponse> closeAllPositions(String userId, boolean cancelOrders) {
+    public List<OrderResponse> closeAllPositions(Long userId, boolean cancelOrders) {
         log.info("Closing all positions for user: {}, cancelOrders: {}", userId, cancelOrders);
 
         try {
@@ -245,7 +245,7 @@ public class PositionService {
      * @param userId User ID
      * @return Total unrealized profit/loss as BigDecimal
      */
-    public BigDecimal calculateTotalUnrealizedPnL(String userId) {
+    public BigDecimal calculateTotalUnrealizedPnL(Long userId) {
         return BigDecimal.valueOf(getTotalUnrealizedPnL(userId));
     }
 
@@ -255,7 +255,7 @@ public class PositionService {
      * @param userId User ID
      * @return Total unrealized profit/loss
      */
-    public double getTotalUnrealizedPnL(String userId) {
+    public double getTotalUnrealizedPnL(Long userId) {
         return getAllPositions(userId).stream()
                 .mapToDouble(p -> p.unrealizedPnL() != null ? p.unrealizedPnL().doubleValue() : 0.0)
                 .sum();
@@ -267,7 +267,7 @@ public class PositionService {
      * @param userId User ID
      * @return Total portfolio value as BigDecimal
      */
-    public BigDecimal calculateTotalPortfolioValue(String userId) {
+    public BigDecimal calculateTotalPortfolioValue(Long userId) {
         return getAllPositions(userId).stream()
                 .map(p -> p.marketValue() != null ? p.marketValue() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -279,7 +279,7 @@ public class PositionService {
      * @param userId User ID
      * @return true if user has open positions
      */
-    public boolean hasOpenPositions(String userId) {
+    public boolean hasOpenPositions(Long userId) {
         return !getAllPositions(userId).isEmpty();
     }
 

@@ -31,31 +31,31 @@ public class WorkflowService {
     private final WorkflowMarketDataService workflowMarketDataService;
     private final OrderExecutionService orderExecutionService;
 
-    public OrderResponse executeTrade(String userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
+    public OrderResponse executeTrade(Long userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest) {
         return workflowTradingService.executeTrade(userId, orderId, tradingApiOrderRequest);
     }
 
-    public List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders) {
+    public List<OrderResponse> executeBatchTrades(Long userId, List<TradingApiOrderRequest> orders) {
         return workflowTradingService.executeBatchTrades(userId, orders);
     }
 
-    public String startMarketDataPolling(String userId, Set<String> symbols, int intervalSeconds) {
+    public String startMarketDataPolling(Long userId, Set<String> symbols, int intervalSeconds) {
         return workflowMarketDataService.startMarketDataPolling(userId, symbols, intervalSeconds);
     }
 
-    public void addSymbolsToPolling(String userId, Set<String> symbols) {
+    public void addSymbolsToPolling(Long userId, Set<String> symbols) {
         workflowMarketDataService.addSymbolsToPolling(userId, symbols);
     }
 
-    public void removeSymbolsFromPolling(String userId, Set<String> symbols) {
+    public void removeSymbolsFromPolling(Long userId, Set<String> symbols) {
         workflowMarketDataService.removeSymbolsFromPolling(userId, symbols);
     }
 
-    public List<StockQuoteDto> getLatestQuotesFromPolling(String userId) {
+    public List<StockQuoteDto> getLatestQuotesFromPolling(Long userId) {
         return workflowMarketDataService.getLatestQuotesFromPolling(userId);
     }
 
-    public void stopMarketDataPolling(String userId) {
+    public void stopMarketDataPolling(Long userId) {
         workflowMarketDataService.stopMarketDataPolling(userId);
     }
 
@@ -66,7 +66,7 @@ public class WorkflowService {
         workflow.cancel();
     }
 
-    public String startTradeAsync(String userId, TradingApiOrderRequest request) {
+    public String startTradeAsync(Long userId, TradingApiOrderRequest request) {
         OrderExecutionService.OrderExecutionResult result = orderExecutionService.startExecution(userId, request);
         if (!result.accepted()) {
             throw new AlpacaException(AlpacaException.ErrorCode.INVALID_ORDER, result.message());

@@ -31,7 +31,7 @@ public class WorkflowHistoricalReplayService extends TemporalAwareService {
         this.workflowClient = workflowClient;
     }
 
-    public String startReplay(String userId,
+    public String startReplay(Long userId,
                               String symbol,
                               Instant start,
                               Instant end,
@@ -77,7 +77,7 @@ public class WorkflowHistoricalReplayService extends TemporalAwareService {
         );
     }
 
-    private String generateReplayWorkflowId(String userId, String symbol) {
+    private String generateReplayWorkflowId(Long userId, String symbol) {
         return "replay-%s-%s-%s".formatted(userId, symbol, currentTimestamp());
     }
 }

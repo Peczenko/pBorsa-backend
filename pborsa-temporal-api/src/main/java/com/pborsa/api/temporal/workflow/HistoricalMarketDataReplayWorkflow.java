@@ -14,7 +14,7 @@ import java.time.Instant;
 public interface HistoricalMarketDataReplayWorkflow {
 
     @WorkflowMethod
-    void startReplay(String userId,
+    void startReplay(Long userId,
                      String symbol,
                      Instant startTime,
                      Instant endTime,

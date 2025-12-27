@@ -32,17 +32,17 @@ public class AccountInfoCacheService {
             cacheManager = "accountInfoCacheManager",
             sync = true
     )
-    public AccountInfoDto getAccountInfo(String userId) {
+    public AccountInfoDto getAccountInfo(Long userId) {
         return fetchAccountInfo(userId);
     }
 
     @CacheEvict(value = CacheNames.ACCOUNT_INFO, key = "#userId")
-    public AccountInfoDto refreshAccountInfo(String userId) {
+    public AccountInfoDto refreshAccountInfo(Long userId) {
         log.debug("Refreshing account info for user: {}", userId);
         return fetchAccountInfo(userId);
     }
 
-    private AccountInfoDto fetchAccountInfo(String userId) {
+    private AccountInfoDto fetchAccountInfo(Long userId) {
         log.debug("Fetching account info (uncached) for user: {}", userId);
 
         try {

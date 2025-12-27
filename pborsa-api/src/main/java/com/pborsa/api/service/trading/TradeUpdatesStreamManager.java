@@ -39,7 +39,7 @@ public class TradeUpdatesStreamManager {
     @Value("${alpaca.trade-updates.auth-timeout-seconds:10}")
     private long authTimeoutSeconds;
 
-    private final Map<String, StreamState> streams = new ConcurrentHashMap<>();
+    private final Map<Long, StreamState> streams = new ConcurrentHashMap<>();
 
     public TradeUpdatesStreamManager(AlpacaClientFactory clientFactory,
                                      UserCredentialsService credentialsService,
@@ -53,15 +53,15 @@ public class TradeUpdatesStreamManager {
         this.tradingExecutor = tradingExecutor;
     }
 
-    public void ensureStream(String userId) {
-        if (userId == null || userId.isBlank()) {
-            log.warn("Skipping trade updates stream for blank userId");
+    public void ensureStream(Long userId) {
+        if (userId == null) {
+            log.warn("Skipping trade updates stream for null userId");
             return;
         }
         streams.computeIfAbsent(userId, this::startStream);
     }
 
-    public void stopStream(String userId) {
+    public void stopStream(Long userId) {
         StreamState state = streams.remove(userId);
         if (state == null) {
             return;
@@ -76,14 +76,14 @@ public class TradeUpdatesStreamManager {
 
     @Scheduled(fixedDelayString = "${alpaca.trade-updates.sync-interval-ms:60000}")
     public void syncStreams() {
-        Set<String> activeUsers = new HashSet<>(orderPersistenceService.findUsersWithOpenOrders());
-        for (String userId : activeUsers) {
+        Set<Long> activeUsers = new HashSet<>(orderPersistenceService.findUsersWithOpenOrders());
+        for (Long userId : activeUsers) {
             ensureStream(userId);
         }
 
         long now = System.currentTimeMillis();
-        for (Map.Entry<String, StreamState> entry : streams.entrySet()) {
-            String userId = entry.getKey();
+        for (Map.Entry<Long, StreamState> entry : streams.entrySet()) {
+            Long userId = entry.getKey();
             StreamState state = entry.getValue();
 
             if (!state.stream.isConnected()) {
@@ -102,7 +102,7 @@ public class TradeUpdatesStreamManager {
         }
     }
 
-    private StreamState startStream(String userId) {
+    private StreamState startStream(Long userId) {
         try {
             AlpacaCredentialsDto credentials = credentialsService.getCredentials(userId);
             AlpacaAPI client = clientFactory.getOrCreateClient(credentials);
@@ -133,7 +133,7 @@ public class TradeUpdatesStreamManager {
         }
     }
 
-    private void reconnect(String userId, StreamState state) {
+    private void reconnect(Long userId, StreamState state) {
         try {
             state.stream.connect();
             if (!state.stream.waitForAuthorization(authTimeoutSeconds, TimeUnit.SECONDS)) {
@@ -148,7 +148,7 @@ public class TradeUpdatesStreamManager {
         }
     }
 
-    private void handleUpdate(String userId, TradeUpdateMessage message, StreamState state) {
+    private void handleUpdate(Long userId, TradeUpdateMessage message, StreamState state) {
         state.touch();
         if (message == null || message.getData() == null) {
             log.debug("Trade update message is empty for user {}", userId);

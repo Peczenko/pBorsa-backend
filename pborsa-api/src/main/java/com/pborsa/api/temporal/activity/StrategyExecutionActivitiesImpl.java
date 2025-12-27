@@ -20,7 +20,7 @@ public class StrategyExecutionActivitiesImpl implements StrategyExecutionActivit
 
     @Override
     public void streamHistoricalData(String executionId,
-                                     String userId,
+                                     Long userId,
                                      String strategyId,
                                      String symbol,
                                      String timeframe,

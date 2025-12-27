@@ -50,8 +50,7 @@ public class UserCredentialsService {
             sync = true
     )
     @Transactional(readOnly = true)
-    public AlpacaCredentialsDto getCredentials(String userId) {
-        // Delegate to internal method to avoid code duplication
+    public AlpacaCredentialsDto getCredentials(Long userId) {
         return getCredentialsInternal(userId);
     }
 
@@ -62,7 +61,7 @@ public class UserCredentialsService {
      * @return CompletableFuture with credentials
      */
     @Async("asyncExecutor")
-    public CompletableFuture<AlpacaCredentialsDto> getCredentialsAsync(String userId) {
+    public CompletableFuture<AlpacaCredentialsDto> getCredentialsAsync(Long userId) {
         return CompletableFuture.completedFuture(getCredentials(userId));
     }
 
@@ -78,7 +77,7 @@ public class UserCredentialsService {
             @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
     })
     @Transactional
-    public boolean registerCredentials(String userId, CredentialsRegistrationRequest request) {
+    public boolean registerCredentials(Long userId, CredentialsRegistrationRequest request) {
         log.info("Registering credentials for user: {}", userId);
 
         // Create temporary credentials for validation
@@ -122,7 +121,7 @@ public class UserCredentialsService {
             @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
     })
     @Transactional
-    public void deactivateCredentials(String userId) {
+    public void deactivateCredentials(Long userId) {
         log.info("Deactivating credentials for user: {}", userId);
         credentialsRepository.deactivateByUserId(userId);
         alpacaClientFactory.evictClient(userId);
@@ -136,7 +135,7 @@ public class UserCredentialsService {
      * @return true if active credentials exist
      */
     @Transactional(readOnly = true)
-    public boolean hasCredentials(String userId) {
+    public boolean hasCredentials(Long userId) {
         return credentialsRepository.findByUserId(userId)
                 .map(UserApiCredentials::isActive)
                 .orElse(false);
@@ -150,7 +149,7 @@ public class UserCredentialsService {
      */
     @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId")
     @Transactional(readOnly = true)
-    public AlpacaCredentialsDto refreshCredentials(String userId) {
+    public AlpacaCredentialsDto refreshCredentials(Long userId) {
         log.debug("Refreshing credentials cache for user: {}", userId);
         // After evicting cache, fetch fresh data
         // Note: Direct call bypasses cache due to @CacheEvict, which is what we want
@@ -161,7 +160,7 @@ public class UserCredentialsService {
      * Internal method to fetch credentials without cache.
      * Used by refreshCredentials to avoid self-invocation cache issues.
      */
-    private AlpacaCredentialsDto getCredentialsInternal(String userId) {
+    private AlpacaCredentialsDto getCredentialsInternal(Long userId) {
         log.debug("Fetching credentials from database (uncached) for user: {}", userId);
         
         UserApiCredentials entity = credentialsRepository.findByUserId(userId)

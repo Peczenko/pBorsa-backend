@@ -41,7 +41,7 @@ public class WorkflowMarketDataService extends TemporalAwareService {
      * @param intervalSeconds Polling interval
      * @return The workflow ID
      */
-    public String startMarketDataPolling(String userId, Set<String> symbols, int intervalSeconds) {
+    public String startMarketDataPolling(Long userId, Set<String> symbols, int intervalSeconds) {
         log.info("Starting market data polling workflow for user {} with {} symbols", userId, symbols.size());
 
         runWithTemporal(() -> {
@@ -59,7 +59,7 @@ public class WorkflowMarketDataService extends TemporalAwareService {
      * @param userId  The user ID
      * @param symbols Symbols to add
      */
-    public void addSymbolsToPolling(String userId, Set<String> symbols) {
+    public void addSymbolsToPolling(Long userId, Set<String> symbols) {
         runWithTemporal(() -> {
             String workflowId = generateMarketDataWorkflowId(userId);
             MarketDataPollingWorkflow workflow = workflowClient.newWorkflowStub(
@@ -76,7 +76,7 @@ public class WorkflowMarketDataService extends TemporalAwareService {
      * @param userId  The user ID
      * @param symbols Symbols to remove
      */
-    public void removeSymbolsFromPolling(String userId, Set<String> symbols) {
+    public void removeSymbolsFromPolling(Long userId, Set<String> symbols) {
         runWithTemporal(() -> {
             String workflowId = generateMarketDataWorkflowId(userId);
             MarketDataPollingWorkflow workflow = workflowClient.newWorkflowStub(
@@ -93,7 +93,7 @@ public class WorkflowMarketDataService extends TemporalAwareService {
      * @param userId The user ID
      * @return List of latest quotes
      */
-    public List<StockQuoteDto> getLatestQuotesFromPolling(String userId) {
+    public List<StockQuoteDto> getLatestQuotesFromPolling(Long userId) {
         return runWithTemporalOrElse(
                 () -> {
                     String workflowId = generateMarketDataWorkflowId(userId);
@@ -115,7 +115,7 @@ public class WorkflowMarketDataService extends TemporalAwareService {
      *
      * @param userId The user ID
      */
-    public void stopMarketDataPolling(String userId) {
+    public void stopMarketDataPolling(Long userId) {
         log.info("Stopping market data polling workflow for user {}", userId);
 
         runWithTemporal(() -> {
@@ -131,7 +131,7 @@ public class WorkflowMarketDataService extends TemporalAwareService {
     /**
      * Generates a workflow ID for market data polling.
      */
-    private String generateMarketDataWorkflowId(String userId) {
+    private String generateMarketDataWorkflowId(Long userId) {
         return "market-data-%s".formatted(userId);
     }
 }

@@ -10,7 +10,7 @@ import java.time.Instant;
 @Builder
 public record StrategyExecutionStartResponse(
         String executionId,
-        String userId,
+        Long userId,
         String strategyId,
         String symbol,
         String timeframe,

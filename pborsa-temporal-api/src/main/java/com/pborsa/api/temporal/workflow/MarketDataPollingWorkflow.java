@@ -25,7 +25,7 @@ public interface MarketDataPollingWorkflow {
      * @param intervalSeconds Polling interval in seconds
      */
     @WorkflowMethod
-    void startPolling(String userId, Set<String> initialSymbols, int intervalSeconds);
+    void startPolling(Long userId, Set<String> initialSymbols, int intervalSeconds);
 
     /**
      * Adds symbols to the polling set.

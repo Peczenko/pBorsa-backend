@@ -31,7 +31,7 @@ public class StrategyExecutionController {
     @PostMapping("/{userId}/{strategyId}/start")
     @Operation(summary = "Start strategy execution", description = "Triggers a Temporal workflow to fetch historical bars and stream them to the trading engine")
     public ResponseEntity<ApiResponse<StrategyExecutionStartResponse>> startStrategyExecution(
-            @PathVariable String userId,
+            @PathVariable Long userId,
             @PathVariable String strategyId,
             @Valid @RequestBody StrategyExecutionStartRequest request
     ) {

@@ -34,7 +34,7 @@ public class HistoricalReplayWebSocketController {
     @MessageMapping("/replay/start/{userId}")
     public void startReplay(
             @Header("simpSessionId") String sessionId,
-            @DestinationVariable String userId,
+            @DestinationVariable Long userId,
             @Payload HistoricalReplayRequest request
     ) {
         String workflowId = workflowReplayService.startReplay(
@@ -77,7 +77,7 @@ public class HistoricalReplayWebSocketController {
      */
     @MessageMapping("/replay/stop/{userId}/{replayId}")
     public void stopReplay(
-            @DestinationVariable String userId,
+            @DestinationVariable Long userId,
             @DestinationVariable String replayId
     ) {
         if (replayService.stopReplay(replayId).isEmpty()) {
@@ -105,7 +105,7 @@ public class HistoricalReplayWebSocketController {
         });
     }
 
-    private void sendReplayTick(String userId, String replayId, HistoricalReplayTickDto tick) {
+    private void sendReplayTick(Long userId, String replayId, HistoricalReplayTickDto tick) {
         messagingTemplate.convertAndSend(
                 "/topic/replay/" + userId + "/" + replayId,
                 tick

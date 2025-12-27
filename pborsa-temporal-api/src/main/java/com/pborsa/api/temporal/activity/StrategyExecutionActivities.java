@@ -13,7 +13,7 @@ public interface StrategyExecutionActivities {
 
     @ActivityMethod
     void streamHistoricalData(String executionId,
-                              String userId,
+                              Long userId,
                               String strategyId,
                               String symbol,
                               String timeframe,

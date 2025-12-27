@@ -35,7 +35,7 @@ create table orders
                    ((ARRAY ['MARKET'::character varying, 'LIMIT'::character varying, 'STOP'::character varying, 'STOP_LIMIT'::character varying, 'TRAILING_STOP'::character varying])::text[])),
     updated_at        timestamp(6) with time zone,
     updated_at_remote timestamp(6) with time zone,
-    user_id           varchar(255) not null,
+    user_id           bigint not null,
     workflow_id       varchar(255)
 );
 
@@ -49,7 +49,7 @@ create table order_history
         constraint order_history_status_check
             check ((status)::text = ANY
                    ((ARRAY ['ACCEPTED_BY_APP'::character varying, 'NEW'::character varying, 'PARTIALLY_FILLED'::character varying, 'FILLED'::character varying, 'DONE_FOR_DAY'::character varying, 'CANCELED'::character varying, 'EXPIRED'::character varying, 'REPLACED'::character varying, 'PENDING_CANCEL'::character varying, 'PENDING_REPLACE'::character varying, 'REJECTED'::character varying, 'PENDING_NEW'::character varying, 'ACCEPTED'::character varying, 'ACCEPTED_FOR_BIDDING'::character varying, 'STOPPED'::character varying, 'SUSPENDED'::character varying, 'CALCULATED'::character varying, 'HELD'::character varying])::text[])),
-    user_id    varchar(255) not null,
+    user_id    bigint not null,
     order_id   uuid         not null
         constraint fk_order_history_order
             references orders

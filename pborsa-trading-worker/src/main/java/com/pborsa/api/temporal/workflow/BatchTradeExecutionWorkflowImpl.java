@@ -39,7 +39,7 @@ public class BatchTradeExecutionWorkflowImpl implements BatchTradeExecutionWorkf
     }
 
     @Override
-    public List<OrderResponse> executeBatchTrades(String userId, List<TradingApiOrderRequest> orders) {
+    public List<OrderResponse> executeBatchTrades(Long userId, List<TradingApiOrderRequest> orders) {
         boolean canTrade = tradingActivities.validateTradingAllowed(userId);
         if (!canTrade) {
             throw new RuntimeException("Trading is not allowed for user: " + userId);

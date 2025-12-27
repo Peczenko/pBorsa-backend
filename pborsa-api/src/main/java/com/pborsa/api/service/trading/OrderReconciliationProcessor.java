@@ -25,7 +25,7 @@ public class OrderReconciliationProcessor {
     private final OrderService orderService;
     private final OrderPersistenceService orderPersistenceService;
 
-    public void reconcileUser(String userId,
+    public void reconcileUser(Long userId,
                               List<OrderEntity> orders,
                               Instant end) {
         if (orders.isEmpty()) {
@@ -68,7 +68,7 @@ public class OrderReconciliationProcessor {
         }
     }
 
-    private void closeRemoteOrder(String userId, OrderResponse remote) {
+    private void closeRemoteOrder(Long userId, OrderResponse remote) {
         if (remote.orderId() == null || remote.orderId().isBlank()) {
             log.debug("Reconcile close skipped, missing alpaca order id for user {}", userId);
             return;

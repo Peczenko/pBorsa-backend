@@ -22,6 +22,6 @@ public interface TradeExecutionWorkflow {
      * @return The executed order response
      */
     @WorkflowMethod
-    OrderResponse executeTrade(String userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest);
+    OrderResponse executeTrade(Long userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest);
 }
 

@@ -8,7 +8,7 @@ import lombok.Builder;
  */
 @Builder
 public record AlpacaCredentialsDto(
-        String userId,
+        Long userId,
         String apiKey,
         String secretKey,
         boolean paperTrading
