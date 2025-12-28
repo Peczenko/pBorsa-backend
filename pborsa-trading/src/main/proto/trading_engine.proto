@@ -27,25 +27,24 @@ message StrategyExecutionHeader {
   google.protobuf.Timestamp end = 7;
 }
 
-message Bar {
+message Trade {
   google.protobuf.Timestamp timestamp = 1;
-  double open = 2;
-  double high = 3;
-  double low = 4;
-  double close = 5;
-  int64 volume = 6;
-  int64 trade_count = 7;
-  double vwap = 8;
+  double price = 2;
+  double size = 3;
+  string exchange = 4;
+  string trade_id = 5;
+  string tape = 6;
+  string conditions = 7;
 }
 
-message BarBatch {
-  repeated Bar bars = 1;
+message TradeBatch {
+  repeated Trade trades = 1;
 }
 
 message StrategyExecutionChunk {
   oneof payload {
     StrategyExecutionHeader header = 1;
-    BarBatch batch = 2;
+    TradeBatch trade_batch = 2;
   }
 }
 

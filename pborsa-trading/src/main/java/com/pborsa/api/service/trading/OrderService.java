@@ -112,49 +112,6 @@ public class OrderService {
         }
     }
 
-    /**
-     * Async version of placeOrder.
-     */
-    @Async("alpacaAsyncExecutor")
-    public CompletableFuture<OrderResponse> placeOrderAsync(Long userId, TradingApiOrderRequest request) {
-        return CompletableFuture.supplyAsync(() -> placeOrder(userId, request));
-    }
-
-    /**
-     * Places a market buy order.
-     */
-    public OrderResponse marketBuy(Long userId, String symbol, BigDecimal quantity) {
-        TradingApiOrderRequest request = TradingApiOrderRequest.marketBuy(symbol, quantity);
-        return placeOrder(userId, request);
-    }
-
-    /**
-     * Places a market sell order.
-     */
-    public OrderResponse marketSell(Long userId, String symbol, BigDecimal quantity) {
-        TradingApiOrderRequest request = TradingApiOrderRequest.marketSell(symbol, quantity);
-        return placeOrder(userId, request);
-    }
-
-    /**
-     * Places a limit buy order.
-     */
-    public OrderResponse limitBuy(Long userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
-        TradingApiOrderRequest request = TradingApiOrderRequest.limitBuy(symbol, quantity, limitPrice);
-        return placeOrder(userId, request);
-    }
-
-    /**
-     * Places a limit sell order.
-     */
-    public OrderResponse limitSell(Long userId, String symbol, BigDecimal quantity, BigDecimal limitPrice) {
-        TradingApiOrderRequest request = TradingApiOrderRequest.limitSell(symbol, quantity, limitPrice);
-        return placeOrder(userId, request);
-    }
-
-    /**
-     * Gets all orders for a user with optional filters.
-     */
     public List<OrderResponse> getOrders(Long userId, String status, Integer limit, 
                                           ZonedDateTime after, ZonedDateTime until, boolean nested) {
         log.debug("Fetching orders for user: {}", userId);
@@ -195,14 +152,6 @@ public class OrderService {
      */
     public List<OrderResponse> getOpenOrders(Long userId) {
         return getOrders(userId, "open", null, null, null, false);
-    }
-
-    /**
-     * Async version of getOrders.
-     */
-    @Async("alpacaAsyncExecutor")
-    public CompletableFuture<List<OrderResponse>> getOrdersAsync(Long userId) {
-        return CompletableFuture.supplyAsync(() -> getOrders(userId, null, null, null, null, false));
     }
 
     /**
@@ -258,14 +207,6 @@ public class OrderService {
                     e
             );
         }
-    }
-
-    /**
-     * Async version of cancelOrder.
-     */
-    @Async("alpacaAsyncExecutor")
-    public CompletableFuture<Boolean> cancelOrderAsync(Long userId, String orderId) {
-        return CompletableFuture.supplyAsync(() -> cancelOrder(userId, orderId));
     }
 
     /**

@@ -2,7 +2,6 @@ package com.pborsa.api.config.temporal;
 
 import com.pborsa.api.temporal.config.TaskQueues;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
-import com.pborsa.api.temporal.workflow.HistoricalMarketDataReplayWorkflow;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
 import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
@@ -33,11 +32,19 @@ public class TemporalWorkflowsConfiguration extends AbstractTemporalWorkflowsCon
             // Determine task queue based on workflow type
             String taskQueue = determineTaskQueue(workflowClass);
             
+            Duration executionTimeout = Duration.ofHours(1);
+            Duration runTimeout = Duration.ofMinutes(30);
+
+            if (StrategyExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
+                executionTimeout = Duration.ofHours(6);
+                runTimeout = Duration.ofHours(6);
+            }
+
             WorkflowOptions options = WorkflowOptions.newBuilder()
                     .setWorkflowId(workflowId)
                     .setTaskQueue(taskQueue)
-                    .setWorkflowExecutionTimeout(Duration.ofHours(1))
-                    .setWorkflowRunTimeout(Duration.ofMinutes(30))
+                    .setWorkflowExecutionTimeout(executionTimeout)
+                    .setWorkflowRunTimeout(runTimeout)
                     .setWorkflowTaskTimeout(Duration.ofMinutes(10))
                     .build();
             
@@ -52,8 +59,7 @@ public class TemporalWorkflowsConfiguration extends AbstractTemporalWorkflowsCon
         if (TradeExecutionWorkflow.class.isAssignableFrom(workflowClass) ||
             BatchTradeExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
             return TaskQueues.TRADING_TASK_QUEUE;
-        } else if (MarketDataPollingWorkflow.class.isAssignableFrom(workflowClass) ||
-                HistoricalMarketDataReplayWorkflow.class.isAssignableFrom(workflowClass)) {
+        } else if (MarketDataPollingWorkflow.class.isAssignableFrom(workflowClass)) {
             return TaskQueues.MARKET_DATA_TASK_QUEUE;
         } else if (StrategyExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
             return TaskQueues.STRATEGY_EXECUTION_TASK_QUEUE;

@@ -1,7 +1,6 @@
 package com.pborsa.api.config.temporal;
 
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
-import com.pborsa.api.temporal.workflow.HistoricalMarketDataReplayWorkflow;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
 import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
@@ -48,14 +47,6 @@ public abstract class AbstractTemporalWorkflowsConfiguration {
     @Bean
     public Function<String, MarketDataPollingWorkflow> marketDataPollingWorkflowProvider() {
         return createWorkflowProvider(MarketDataPollingWorkflow.class);
-    }
-
-    /**
-     * Creates a provider bean for HistoricalMarketDataReplayWorkflow.
-     */
-    @Bean
-    public Function<String, HistoricalMarketDataReplayWorkflow> historicalReplayWorkflowProvider() {
-        return createWorkflowProvider(HistoricalMarketDataReplayWorkflow.class);
     }
 
     /**

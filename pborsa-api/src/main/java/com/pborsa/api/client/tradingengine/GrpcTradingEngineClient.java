@@ -2,10 +2,10 @@ package com.pborsa.api.client.tradingengine;
 
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.Timestamps;
-import com.pborsa.api.domain.dto.market.StockBarDto;
+import com.pborsa.api.domain.dto.market.StockTradeDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
-import com.pborsa.api.tradingengine.v1.Bar;
-import com.pborsa.api.tradingengine.v1.BarBatch;
+import com.pborsa.api.tradingengine.v1.Trade;
+import com.pborsa.api.tradingengine.v1.TradeBatch;
 import com.pborsa.api.tradingengine.v1.ExecutionAck;
 import com.pborsa.api.tradingengine.v1.StrategyExecutionChunk;
 import com.pborsa.api.tradingengine.v1.StrategyExecutionHeader;
@@ -46,6 +46,7 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
         Objects.requireNonNull(context, "Strategy execution context is required");
 
         AtomicReference<ExecutionAck> ackRef = new AtomicReference<>();
+        AtomicReference<Throwable> streamError = new AtomicReference<>();
         CountDownLatch finished = new CountDownLatch(1);
 
         StreamObserver<ExecutionAck> responseObserver = new StreamObserver<>() {
@@ -54,10 +55,15 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
                 ackRef.set(value);
                 log.info("Trading engine ack for execution {}: accepted={}, message={}",
                         context.executionId(), value.getAccepted(), value.getMessage());
+                if (!value.getAccepted()) {
+                    streamError.compareAndSet(null,
+                            new IllegalStateException("Trading engine rejected execution: " + value.getMessage()));
+                }
             }
 
             @Override
             public void onError(Throwable t) {
+                streamError.compareAndSet(null, t);
                 log.error("Trading engine stream error for execution {}", context.executionId(), t);
                 finished.countDown();
             }
@@ -75,17 +81,27 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
 
         return new TradingEngineStream() {
             @Override
-            public void sendBatch(List<StockBarDto> bars) {
-                if (bars == null || bars.isEmpty()) {
+            public void sendTrades(List<StockTradeDto> trades) {
+                ensureHealthy();
+                if (trades == null || trades.isEmpty()) {
                     return;
                 }
-                BarBatch.Builder batchBuilder = BarBatch.newBuilder();
-                for (StockBarDto bar : bars) {
-                    batchBuilder.addBars(toProtoBar(bar));
+                TradeBatch.Builder batchBuilder = TradeBatch.newBuilder();
+                for (StockTradeDto trade : trades) {
+                    batchBuilder.addTrades(toProtoTrade(trade));
                 }
                 requestObserver.onNext(StrategyExecutionChunk.newBuilder()
-                        .setBatch(batchBuilder.build())
+                        .setTradeBatch(batchBuilder.build())
                         .build());
+            }
+
+            @Override
+            public void ensureHealthy() {
+                Throwable error = streamError.get();
+                if (error != null) {
+                    throw new IllegalStateException("Trading engine stream failed for execution "
+                            + context.executionId(), error);
+                }
             }
 
             @Override
@@ -112,29 +128,26 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
                 .build();
     }
 
-    private Bar toProtoBar(StockBarDto bar) {
-        Bar.Builder builder = Bar.newBuilder()
-                .setTimestamp(toTimestamp(bar.timestamp()));
-        if (bar.open() != null) {
-            builder.setOpen(bar.open().doubleValue());
+    private Trade toProtoTrade(StockTradeDto trade) {
+        Trade.Builder builder = Trade.newBuilder()
+                .setTimestamp(toTimestamp(trade.timestamp()));
+        if (trade.price() != null) {
+            builder.setPrice(trade.price().doubleValue());
         }
-        if (bar.high() != null) {
-            builder.setHigh(bar.high().doubleValue());
+        if (trade.size() != null) {
+            builder.setSize(trade.size().doubleValue());
         }
-        if (bar.low() != null) {
-            builder.setLow(bar.low().doubleValue());
+        if (trade.exchange() != null) {
+            builder.setExchange(trade.exchange());
         }
-        if (bar.close() != null) {
-            builder.setClose(bar.close().doubleValue());
+        if (trade.tradeId() != null) {
+            builder.setTradeId(trade.tradeId());
         }
-        if (bar.volume() != null) {
-            builder.setVolume(bar.volume());
+        if (trade.tape() != null) {
+            builder.setTape(trade.tape());
         }
-        if (bar.tradeCount() != null) {
-            builder.setTradeCount(bar.tradeCount());
-        }
-        if (bar.vwap() != null) {
-            builder.setVwap(bar.vwap().doubleValue());
+        if (trade.conditions() != null) {
+            builder.setConditions(trade.conditions());
         }
         return builder.build();
     }
