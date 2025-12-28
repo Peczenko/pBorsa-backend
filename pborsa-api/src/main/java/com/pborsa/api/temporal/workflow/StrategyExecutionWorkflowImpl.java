@@ -2,6 +2,7 @@ package com.pborsa.api.temporal.workflow;
 
 import com.pborsa.api.temporal.activity.StrategyExecutionActivities;
 import com.pborsa.api.temporal.config.TaskQueues;
+import io.temporal.activity.ActivityCancellationType;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
@@ -25,9 +26,11 @@ public class StrategyExecutionWorkflowImpl implements StrategyExecutionWorkflow 
                 .build();
 
         ActivityOptions options = ActivityOptions.newBuilder()
-                .setStartToCloseTimeout(Duration.ofMinutes(15))
+                .setStartToCloseTimeout(Duration.ofHours(3))
+                .setScheduleToCloseTimeout(Duration.ofHours(3))
                 .setTaskQueue(TaskQueues.STRATEGY_EXECUTION_TASK_QUEUE)
                 .setRetryOptions(retryOptions)
+                .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
                 .build();
 
         this.activities = Workflow.newActivityStub(StrategyExecutionActivities.class, options);

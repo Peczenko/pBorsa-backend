@@ -2,6 +2,8 @@ package com.pborsa.api.temporal.activity;
 
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import com.pborsa.api.service.strategy.StrategyExecutionOrchestrator;
+import io.temporal.activity.Activity;
+import io.temporal.activity.ActivityExecutionContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,7 +29,8 @@ public class StrategyExecutionActivitiesImpl implements StrategyExecutionActivit
                                      Instant start,
                                      Instant end) {
         log.info("Activity streaming data for execution {}", executionId);
-        orchestrator.execute(StrategyExecutionContext.builder()
+        ActivityExecutionContext activityContext = Activity.getExecutionContext();
+        StrategyExecutionContext context = StrategyExecutionContext.builder()
                 .executionId(executionId)
                 .userId(userId)
                 .strategyId(strategyId)
@@ -35,6 +38,7 @@ public class StrategyExecutionActivitiesImpl implements StrategyExecutionActivit
                 .timeframe(timeframe)
                 .start(start)
                 .end(end)
-                .build());
+                .build();
+        orchestrator.execute(context, () -> activityContext.heartbeat(executionId));
     }
 }

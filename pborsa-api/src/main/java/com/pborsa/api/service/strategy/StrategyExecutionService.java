@@ -45,8 +45,8 @@ public class StrategyExecutionService {
                 : DEFAULT_TIMEFRAME;
 
         ZonedDateTime nowUtc = now(java.time.ZoneOffset.UTC);
-        Instant end = nowUtc.minusMinutes(5).toInstant();
-        Instant start = nowUtc.minusMonths(6).toInstant();
+        Instant end = nowUtc.minusMinutes(15).toInstant();
+        Instant start = nowUtc.minusMonths(1).toInstant();
 
         String executionId = UUID.randomUUID().toString();
         StrategyExecutionContext context = StrategyExecutionContext.builder()

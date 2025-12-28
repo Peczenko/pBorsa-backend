@@ -46,10 +46,15 @@ public class MarketDataMapper {
 
         return StockTradeDto.builder()
                 .symbol(symbol)
-                .price(trade.getP() != null ? BigDecimal.valueOf(trade.getP()) : null)
-                .size(trade.getS() != null ? new BigDecimal(trade.getS()) : null)
+                .price(BigDecimal.valueOf(trade.getP()))
+                .size(new BigDecimal(trade.getS()))
                 .exchange(trade.getX())
-                .timestamp(trade.getT() != null ? trade.getT().toInstant() : null)
+                .timestamp(trade.getT().toInstant())
+                .tradeId(String.valueOf(trade.getI()))
+                .tape(trade.getZ().getValue())
+                .conditions(!trade.getC().isEmpty()
+                        ? String.join(",", trade.getC())
+                        : null)
                 .build();
     }
 

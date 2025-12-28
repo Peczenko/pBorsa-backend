@@ -2,7 +2,6 @@ package com.pborsa.api.temporal.config;
 
 import com.pborsa.api.temporal.activity.TradingActivitiesImpl;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflowImpl;
-import com.pborsa.api.temporal.workflow.HistoricalMarketDataReplayWorkflowImpl;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflowImpl;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflowImpl;
 import io.temporal.worker.Worker;
@@ -45,8 +44,7 @@ public class WorkerRegistration {
 
             // Register market data workflows and activities
             marketDataWorker.registerWorkflowImplementationTypes(
-                    MarketDataPollingWorkflowImpl.class,
-                    HistoricalMarketDataReplayWorkflowImpl.class
+                    MarketDataPollingWorkflowImpl.class
             );
             marketDataWorker.registerActivitiesImplementations(tradingActivitiesImpl);
             log.info("Registered market data workflows and activities on queue: {}", TaskQueues.MARKET_DATA_TASK_QUEUE);
