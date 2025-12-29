@@ -4,6 +4,7 @@ import com.pborsa.api.domain.dto.market.StockQuoteDto;
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.exception.AlpacaException;
+import com.pborsa.api.service.trading.OrderExecutionResult;
 import com.pborsa.api.service.trading.OrderExecutionService;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowStub;
@@ -67,7 +68,7 @@ public class WorkflowService {
     }
 
     public String startTradeAsync(Long userId, TradingApiOrderRequest request) {
-        OrderExecutionService.OrderExecutionResult result = orderExecutionService.startExecution(userId, request);
+        OrderExecutionResult result = orderExecutionService.startExecution(userId, request);
         if (!result.accepted()) {
             throw new AlpacaException(AlpacaException.ErrorCode.INVALID_ORDER, result.message());
         }

@@ -1,5 +1,6 @@
 package com.pborsa.api.temporal.workflow;
 
+import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import com.pborsa.api.temporal.activity.StrategyExecutionActivities;
 import com.pborsa.api.temporal.config.TaskQueues;
 import io.temporal.activity.ActivityCancellationType;
@@ -8,7 +9,6 @@ import io.temporal.common.RetryOptions;
 import io.temporal.workflow.Workflow;
 
 import java.time.Duration;
-import java.time.Instant;
 
 /**
  * Workflow that triggers strategy execution streaming activity.
@@ -37,13 +37,7 @@ public class StrategyExecutionWorkflowImpl implements StrategyExecutionWorkflow 
     }
 
     @Override
-    public void execute(String executionId,
-                        Long userId,
-                        String strategyId,
-                        String symbol,
-                        String timeframe,
-                        Instant start,
-                        Instant end) {
-        activities.streamHistoricalData(executionId, userId, strategyId, symbol, timeframe, start, end);
+    public void execute(StrategyExecutionContext context) {
+        activities.streamHistoricalData(context);
     }
 }

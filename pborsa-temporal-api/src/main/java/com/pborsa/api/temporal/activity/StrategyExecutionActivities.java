@@ -3,7 +3,7 @@ package com.pborsa.api.temporal.activity;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
-import java.time.Instant;
+import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 
 /**
  * Activities for strategy execution data streaming.
@@ -12,11 +12,5 @@ import java.time.Instant;
 public interface StrategyExecutionActivities {
 
     @ActivityMethod
-    void streamHistoricalData(String executionId,
-                              Long userId,
-                              String strategyId,
-                              String symbol,
-                              String timeframe,
-                              Instant start,
-                              Instant end);
+    void streamHistoricalData(StrategyExecutionContext context);
 }

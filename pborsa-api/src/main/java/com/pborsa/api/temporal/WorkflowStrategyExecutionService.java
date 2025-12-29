@@ -32,15 +32,7 @@ public class WorkflowStrategyExecutionService extends TemporalAwareService {
 
         runWithTemporal(() -> {
             StrategyExecutionWorkflow workflow = strategyExecutionWorkflowProvider.apply(workflowId);
-            WorkflowClient.start(() -> workflow.execute(
-                    context.executionId(),
-                    context.userId(),
-                    context.strategyId(),
-                    context.symbol(),
-                    context.timeframe(),
-                    context.start(),
-                    context.end()
-            ));
+            WorkflowClient.start(() -> workflow.execute(context));
             log.info("Started strategy execution workflow {}", workflowId);
         });
 

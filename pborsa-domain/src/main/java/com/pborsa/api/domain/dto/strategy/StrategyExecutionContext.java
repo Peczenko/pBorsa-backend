@@ -13,7 +13,6 @@ public record StrategyExecutionContext(
         Long userId,
         String strategyId,
         String symbol,
-        String timeframe,
         Instant start,
         Instant end
 ) {

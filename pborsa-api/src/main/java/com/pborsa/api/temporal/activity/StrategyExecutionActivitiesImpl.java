@@ -8,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-
 /**
  * Activity implementation that delegates to StrategyExecutionOrchestrator.
  */
@@ -21,24 +19,9 @@ public class StrategyExecutionActivitiesImpl implements StrategyExecutionActivit
     private final StrategyExecutionOrchestrator orchestrator;
 
     @Override
-    public void streamHistoricalData(String executionId,
-                                     Long userId,
-                                     String strategyId,
-                                     String symbol,
-                                     String timeframe,
-                                     Instant start,
-                                     Instant end) {
-        log.info("Activity streaming data for execution {}", executionId);
+    public void streamHistoricalData(StrategyExecutionContext context) {
+        log.info("Activity streaming data for execution {}", context.executionId());
         ActivityExecutionContext activityContext = Activity.getExecutionContext();
-        StrategyExecutionContext context = StrategyExecutionContext.builder()
-                .executionId(executionId)
-                .userId(userId)
-                .strategyId(strategyId)
-                .symbol(symbol)
-                .timeframe(timeframe)
-                .start(start)
-                .end(end)
-                .build();
-        orchestrator.execute(context, () -> activityContext.heartbeat(executionId));
+        orchestrator.execute(context, () -> activityContext.heartbeat(context.executionId()));
     }
 }

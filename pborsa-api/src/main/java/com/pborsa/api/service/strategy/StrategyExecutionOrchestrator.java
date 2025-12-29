@@ -15,6 +15,9 @@ import net.jacobpeterson.alpaca.AlpacaAPI;
 import net.jacobpeterson.alpaca.openapi.marketdata.ApiException;
 import org.springframework.stereotype.Service;
 
+import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.DATA_STREAM_ERROR;
+import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.TRADING_ENGINE_UNAVAILABLE;
+
 /**
  * Streams historical trades from Alpaca to the trading engine in batches.
  */
@@ -59,7 +62,7 @@ public class StrategyExecutionOrchestrator {
             StrategyExecutionStreamGuard guard = new StrategyExecutionStreamGuard(stream, heartbeatRunner);
             guard.checkpoint();
             do {
-                AlpacaTradeFetcher.TradePage page = tradeFetcher.fetchPage(
+                TradePage page = tradeFetcher.fetchPage(
                         client,
                         context.executionId(),
                         symbol,
@@ -83,28 +86,21 @@ public class StrategyExecutionOrchestrator {
         } catch (ApiException e) {
             log.error("Alpaca API error streaming execution {}", context.executionId(), e);
             throw new StrategyExecutionException(
-                    StrategyExecutionException.ErrorCode.DATA_STREAM_ERROR,
+                    DATA_STREAM_ERROR,
                     "Failed to fetch historical trades from Alpaca: " + e.getMessage(),
                     e
             );
-        } catch (StatusRuntimeException e) {
+        } catch (StatusRuntimeException | IllegalStateException e) {
             log.error("Trading engine unavailable for execution {}", context.executionId(), e);
             throw new StrategyExecutionException(
-                    StrategyExecutionException.ErrorCode.TRADING_ENGINE_UNAVAILABLE,
-                    "Trading engine unavailable: " + e.getMessage(),
-                    e
-            );
-        } catch (IllegalStateException e) {
-            log.error("Trading engine unavailable for execution {}", context.executionId(), e);
-            throw new StrategyExecutionException(
-                    StrategyExecutionException.ErrorCode.TRADING_ENGINE_UNAVAILABLE,
+                    TRADING_ENGINE_UNAVAILABLE,
                     "Trading engine unavailable: " + e.getMessage(),
                     e
             );
         } catch (Exception e) {
             log.error("Unexpected error streaming execution {}", context.executionId(), e);
             throw new StrategyExecutionException(
-                    StrategyExecutionException.ErrorCode.DATA_STREAM_ERROR,
+                    DATA_STREAM_ERROR,
                     "Failed to stream data to trading engine",
                     e
             );
