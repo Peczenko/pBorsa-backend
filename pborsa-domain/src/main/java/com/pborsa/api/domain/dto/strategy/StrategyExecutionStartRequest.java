@@ -9,7 +9,6 @@ import lombok.Builder;
 @Builder
 public record StrategyExecutionStartRequest(
         @NotBlank(message = "Symbol is required")
-        String symbol,
-        String timeframe
+        String symbol
 ) {
 }

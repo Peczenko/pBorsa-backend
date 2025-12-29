@@ -117,6 +117,4 @@ public class AlpacaTradeFetcher {
         }
     }
 
-    public record TradePage(List<StockTrade> trades, String nextPageToken) {
-    }
 }

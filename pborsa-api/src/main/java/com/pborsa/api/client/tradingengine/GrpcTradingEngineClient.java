@@ -122,7 +122,6 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
                 .setUserId(context.userId())
                 .setStrategyId(context.strategyId())
                 .setSymbol(context.symbol())
-                .setTimeframe(context.timeframe())
                 .setStart(toTimestamp(context.start()))
                 .setEnd(toTimestamp(context.end()))
                 .build();

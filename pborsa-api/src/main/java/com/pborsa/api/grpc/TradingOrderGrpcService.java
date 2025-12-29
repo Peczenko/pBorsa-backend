@@ -2,6 +2,7 @@ package com.pborsa.api.grpc;
 
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.service.trading.OrderExecutionService;
+import com.pborsa.api.service.trading.OrderExecutionResult;
 import com.pborsa.api.tradingengine.v1.TradingOrderServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
             TradingApiOrderRequest dto = mapToDto(grpcRequest);
             log.info("Received gRPC placeOrder request for user {}: {}", grpcRequest.getUserId(), dto);
 
-            OrderExecutionService.OrderExecutionResult result =
+            OrderExecutionResult result =
                     orderExecutionService.startExecution(grpcRequest.getUserId(), dto);
 
             responseObserver.onNext(mapResultProto(result));
@@ -51,7 +52,7 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
     }
 
     private com.pborsa.api.tradingengine.v1.OrderResponse mapResultProto(
-            OrderExecutionService.OrderExecutionResult result) {
+            OrderExecutionResult result) {
         com.pborsa.api.tradingengine.v1.OrderStatus status = result.accepted()
                 ? com.pborsa.api.tradingengine.v1.OrderStatus.PENDING_NEW
                 : com.pborsa.api.tradingengine.v1.OrderStatus.REJECTED;
