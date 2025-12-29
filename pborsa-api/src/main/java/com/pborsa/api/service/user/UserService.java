@@ -1,5 +1,6 @@
 package com.pborsa.api.service.user;
 
+import com.pborsa.api.domain.dto.user.UserProfileDto;
 import com.pborsa.api.domain.dto.user.UserStatus;
 import com.pborsa.api.domain.entity.UserEntity;
 import com.pborsa.api.repository.UserRepository;
@@ -14,47 +15,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class UserService {
 
+    private static final String DEFAULT_PROVIDER = "unknown";
+
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Transactional
     public UserEntity syncUser(FirebaseUserPrincipal principal) {
-        UserEntity entity = userRepository.findByFirebaseUid(principal.uid())
+        UserSyncData data = buildSyncData(principal);
+        UserEntity entity = userRepository.findByFirebaseUid(data.firebaseUid())
                 .orElseGet(() -> new UserEntity()
-                        .setFirebaseUid(principal.uid())
+                        .setFirebaseUid(data.firebaseUid())
                         .setStatus(UserStatus.ACTIVE));
 
-        boolean changed = false;
-
-        if (!equals(entity.getFirebaseUid(), principal.uid())) {
-            entity.setFirebaseUid(principal.uid());
-            changed = true;
-        }
-
-        String email = normalize(principal.email());
-        if (!equals(entity.getEmail(), email)) {
-            entity.setEmail(email);
-            changed = true;
-        }
-
-        String displayName = normalize(principal.displayName());
-        if (!equals(entity.getDisplayName(), displayName)) {
-            entity.setDisplayName(displayName);
-            changed = true;
-        }
-
-        String provider = normalize(principal.provider());
-        if (provider == null) {
-            provider = "unknown";
-        }
-        if (!equals(entity.getProvider(), provider)) {
-            entity.setProvider(provider);
-            changed = true;
-        }
-
-        if (entity.getStatus() == null) {
-            entity.setStatus(UserStatus.ACTIVE);
-            changed = true;
-        }
+        boolean changed = applySync(entity, data);
 
         if (changed || entity.getCreatedAt() == null) {
             entity = userRepository.save(entity);
@@ -64,8 +38,50 @@ public class UserService {
         return entity;
     }
 
+    @Transactional
+    public UserProfileDto syncUserProfile(FirebaseUserPrincipal principal) {
+        return userMapper.toProfile(syncUser(principal));
+    }
+
+    private UserSyncData buildSyncData(FirebaseUserPrincipal principal) {
+        return new UserSyncData(
+                principal.uid(),
+                normalize(principal.email()),
+                normalize(principal.displayName()),
+                normalizeOrDefault(principal.provider(), DEFAULT_PROVIDER)
+        );
+    }
+
+    private boolean applySync(UserEntity entity, UserSyncData data) {
+        boolean changed = false;
+        changed |= updateIfChanged(entity.getFirebaseUid(), data.firebaseUid(), entity::setFirebaseUid);
+        changed |= updateIfChanged(entity.getEmail(), data.email(), entity::setEmail);
+        changed |= updateIfChanged(entity.getDisplayName(), data.displayName(), entity::setDisplayName);
+        changed |= updateIfChanged(entity.getProvider(), data.provider(), entity::setProvider);
+
+        if (entity.getStatus() == null) {
+            entity.setStatus(UserStatus.ACTIVE);
+            changed = true;
+        }
+
+        return changed;
+    }
+
     private String normalize(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizeOrDefault(String value, String defaultValue) {
+        String normalized = normalize(value);
+        return normalized != null ? normalized : defaultValue;
+    }
+
+    private boolean updateIfChanged(String current, String next, java.util.function.Consumer<String> setter) {
+        if (equals(current, next)) {
+            return false;
+        }
+        setter.accept(next);
+        return true;
     }
 
     private boolean equals(String left, String right) {
@@ -77,4 +93,5 @@ public class UserService {
         }
         return left.equals(right);
     }
+
 }
