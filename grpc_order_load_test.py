@@ -10,7 +10,7 @@ import trading_engine_pb2 as pb2
 import trading_engine_pb2_grpc as pb2_grpc
 
 
-def build_request(index, user_id, symbol, quantity, client_prefix):
+def build_request(index, user_id, symbol, quantity, client_prefix, strategy_id):
     return pb2.OrderRequest(
         user_id=user_id,
         symbol=symbol,
@@ -22,6 +22,7 @@ def build_request(index, user_id, symbol, quantity, client_prefix):
         stop_price=0.0,
         extended_hours=False,
         client_order_id=f"{client_prefix}-{index}-{uuid.uuid4().hex[:8]}",
+        strategy_id=strategy_id,
     )
 
 
@@ -33,6 +34,7 @@ def main():
     parser.add_argument("--duration", type=float, default=10.0, help="Total duration to spread requests (seconds)")
     parser.add_argument("--timeout", type=float, default=10.0, help="Per-request timeout (seconds)")
     parser.add_argument("--user-id", type=int, default=1, help="User id")
+    parser.add_argument("--strategy-id", type=int, default=1, help="Strategy id")
     parser.add_argument(
         "--symbols",
         default="AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,AMD,NFLX,INTC",
@@ -65,7 +67,7 @@ def main():
     def send_one(i):
         symbol = random.choice(symbols)
         quantity = round(random.uniform(args.min_qty, args.max_qty), 4)
-        req = build_request(i, args.user_id, symbol, quantity, args.client_prefix)
+        req = build_request(i, args.user_id, symbol, quantity, args.client_prefix, args.strategy_id)
         return stub.PlaceOrder(req, timeout=args.timeout)
 
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
