@@ -1,5 +1,6 @@
 package com.pborsa.api.grpc;
 
+import com.pborsa.api.domain.dto.trading.OrderExecutionRequest;
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.service.trading.OrderExecutionService;
 import com.pborsa.api.service.trading.OrderExecutionResult;
@@ -26,7 +27,10 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
             log.info("Received gRPC placeOrder request for user {}: {}", grpcRequest.getUserId(), dto);
 
             OrderExecutionResult result =
-                    orderExecutionService.startExecution(grpcRequest.getUserId(), dto);
+                    orderExecutionService.startExecution(OrderExecutionRequest.builder()
+                            .userId(grpcRequest.getUserId())
+                            .order(dto)
+                            .build());
 
             responseObserver.onNext(mapResultProto(result));
             responseObserver.onCompleted();
@@ -48,6 +52,7 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
                 .stopPrice(req.getStopPrice() != 0d ? BigDecimal.valueOf(req.getStopPrice()) : null)
                 .extendedHours(req.getExtendedHours())
                 .clientOrderId(req.getClientOrderId().isBlank() ? null : req.getClientOrderId())
+                .strategyId(req.getStrategyId() > 0 ? req.getStrategyId() : null)
                 .build();
     }
 

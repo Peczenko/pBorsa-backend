@@ -4,11 +4,11 @@ import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionStartRequest;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionStartResponse;
 import com.pborsa.api.exception.StrategyExecutionException;
+import com.pborsa.api.repository.StrategyRepository;
 import com.pborsa.api.service.credentials.UserCredentialsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -24,9 +24,10 @@ public class StrategyService {
 
     private final UserCredentialsService credentialsService;
     private final StrategyExecutionService strategyExecutionService;
+    private final StrategyRepository strategyRepository;
 
     public StrategyExecutionStartResponse startStrategy(Long userId,
-                                                        String strategyId,
+                                                        Long strategyId,
                                                         StrategyExecutionStartRequest request) {
         ensureStrategyExists(strategyId);
         credentialsService.getCredentials(userId);
@@ -63,13 +64,16 @@ public class StrategyService {
                 .build();
     }
 
-    private void ensureStrategyExists(String strategyId) {
-        // TODO: implement actual strategy validation
-        if (!StringUtils.hasText(strategyId)) {
+    private void ensureStrategyExists(Long strategyId) {
+        if (strategyId == null) {
             throw new StrategyExecutionException(
                     StrategyExecutionException.ErrorCode.INVALID_REQUEST,
                     "Strategy ID is required");
         }
-        log.debug("Strategy catalog lookup stubbed, accepting strategyId={}", strategyId);
+        if (!strategyRepository.existsById(strategyId)) {
+            throw new StrategyExecutionException(
+                    StrategyExecutionException.ErrorCode.INVALID_REQUEST,
+                    "Strategy not found: " + strategyId);
+        }
     }
 }

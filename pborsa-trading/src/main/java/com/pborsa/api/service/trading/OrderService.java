@@ -89,17 +89,21 @@ public class OrderService {
 
             return orderMapper.toOrderResponse(order);
         } catch (ApiException e) {
+            if (isRateLimitExceeded(e)) {
+                log.warn("Order rate limited for user {} symbol {}: {}", userId, request.symbol(), e.getMessage());
+                throw new AlpacaException(
+                        AlpacaException.ErrorCode.RATE_LIMIT_EXCEEDED,
+                        "Rate limit exceeded: " + extractOrderErrorMessage(e),
+                        e
+                );
+            }
             if (isInsufficientFunds(e)) {
                 log.warn("Order rejected due to insufficient funds for user {} symbol {}: {}",
                         userId, request.symbol(), e.getMessage());
                 return buildRejectedOrderResponse(request, clientOrderId, extractOrderErrorMessage(e));
             }
             log.error("Failed to place order for user: {}", userId, e);
-            throw new AlpacaException(
-                    AlpacaException.ErrorCode.ORDER_FAILED,
-                    "Failed to place order: " + e.getMessage(),
-                    e
-            );
+            return buildRejectedOrderResponse(request, clientOrderId, extractOrderErrorMessage(e));
         } catch (AlpacaException e) {
             throw e;
         } catch (Exception e) {
@@ -282,8 +286,8 @@ public class OrderService {
     }
 
     private boolean isInsufficientFunds(ApiException exception) {
-        if (exception.getCode() == 403) {
-            return true;
+        if (exception.getCode() != 403) {
+            return false;
         }
         String body = exception.getResponseBody();
         if (body != null) {
@@ -300,8 +304,12 @@ public class OrderService {
         return normalizedMessage.contains("insufficient") || normalizedMessage.contains("buying power");
     }
 
+    private boolean isRateLimitExceeded(ApiException exception) {
+        return exception.getCode() == 429;
+    }
+
     private String extractOrderErrorMessage(ApiException exception) {
-        String body = exception.getResponseBody();
+        String body = exception.getMessage();
         if (body != null && !body.isBlank()) {
             return body;
         }

@@ -1,8 +1,9 @@
 package com.pborsa.api.temporal;
 
 import com.pborsa.api.config.temporal.TemporalProperties;
-import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
+import com.pborsa.api.domain.dto.trading.TradeExecutionRequest;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.TradeExecutionWorkflow;
 import io.temporal.client.WorkflowClient;
@@ -47,7 +48,11 @@ public class WorkflowTradingService extends TemporalAwareService {
                 () -> {
                     String workflowId = generateTradeWorkflowId(userId);
                     TradeExecutionWorkflow workflow = tradeExecutionWorkflowProvider.apply(workflowId);
-                    return workflow.executeTrade(userId, orderId, tradingApiOrderRequest);
+                    return workflow.executeTrade(TradeExecutionRequest.builder()
+                            .userId(userId)
+                            .orderId(orderId)
+                            .order(tradingApiOrderRequest)
+                            .build());
                 },
                 () -> {
                     log.warn("Temporal is disabled, trade execution workflow not executed for user: {}", userId);
@@ -97,7 +102,11 @@ public class WorkflowTradingService extends TemporalAwareService {
         runWithTemporalOrElse(
                 () -> {
                     TradeExecutionWorkflow wf = tradeExecutionWorkflowProvider.apply(workflowId);
-                    WorkflowClient.start(wf::executeTrade, userId, orderId, request);
+                    WorkflowClient.start(wf::executeTrade, TradeExecutionRequest.builder()
+                            .userId(userId)
+                            .orderId(orderId)
+                            .order(request)
+                            .build());
                 },
                 () -> {
                     log.warn("Temporal is disabled, trade execution workflow not executed for user: {}", userId);

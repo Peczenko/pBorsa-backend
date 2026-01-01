@@ -1,11 +1,9 @@
 package com.pborsa.api.temporal.workflow;
 
-import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
+import com.pborsa.api.domain.dto.trading.TradeExecutionRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
-
-import java.util.UUID;
 
 /**
  * Workflow interface for trade execution.
@@ -17,11 +15,10 @@ public interface TradeExecutionWorkflow {
     /**
      * Executes a single trade order with validation and monitoring.
      *
-     * @param userId       The user ID
-     * @param tradingApiOrderRequest The order to execute
+     * @param request Trade execution request payload
      * @return The executed order response
      */
     @WorkflowMethod
-    OrderResponse executeTrade(Long userId, UUID orderId, TradingApiOrderRequest tradingApiOrderRequest);
+    OrderResponse executeTrade(TradeExecutionRequest request);
 }
 
