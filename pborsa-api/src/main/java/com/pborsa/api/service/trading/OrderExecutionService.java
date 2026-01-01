@@ -1,5 +1,6 @@
 package com.pborsa.api.service.trading;
 
+import com.pborsa.api.domain.dto.trading.OrderExecutionRequest;
 import com.pborsa.api.domain.dto.trading.OrderStatus;
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.entity.OrderEntity;
@@ -33,7 +34,9 @@ public class OrderExecutionService {
         this.tradeUpdatesStreamManager = tradeUpdatesStreamManager;
     }
 
-    public OrderExecutionResult startExecution(Long userId, TradingApiOrderRequest request) {
+    public OrderExecutionResult startExecution(OrderExecutionRequest executionRequest) {
+        Long userId = executionRequest.userId();
+        TradingApiOrderRequest request = executionRequest.order();
         if (!accountService.canTrade(userId)) {
             OrderEntity rejected = orderPersistenceService.createRejectedOrder(
                     userId,

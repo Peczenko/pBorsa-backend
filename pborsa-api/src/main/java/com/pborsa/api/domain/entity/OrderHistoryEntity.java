@@ -1,6 +1,7 @@
 package com.pborsa.api.domain.entity;
 
 import com.pborsa.api.domain.dto.trading.OrderStatus;
+import com.pborsa.api.domain.dto.trading.OrderStatusReason;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -42,6 +43,10 @@ public class OrderHistoryEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 64)
+    private OrderStatusReason reason;
 
     @Column(length = 512)
     private String message;

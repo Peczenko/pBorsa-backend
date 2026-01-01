@@ -30,7 +30,7 @@ public class StrategyExecutionController {
     @Operation(summary = "Start strategy execution", description = "Starts the execution of a trading strategy for a user. If execution starts temporal workflow can be found.")
     public ResponseEntity<ApiResponse<StrategyExecutionStartResponse>> startStrategyExecution(
             @PathVariable Long userId,
-            @PathVariable String strategyId,
+            @PathVariable Long strategyId,
             @Valid @RequestBody StrategyExecutionStartRequest request
     ) {
         log.info("API startStrategyExecution userId={}, strategyId={}, symbol={}",

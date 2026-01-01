@@ -35,7 +35,9 @@ public record TradingApiOrderRequest(
 
         Boolean extendedHours,
 
-        String clientOrderId
+        String clientOrderId,
+
+        Long strategyId
 ) {
     /**
      * Creates a market buy order.

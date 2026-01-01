@@ -20,7 +20,7 @@ service TradingOrderService {
 message StrategyExecutionHeader {
   string execution_id = 1;
   int64 user_id = 2;
-  string strategy_id = 3;
+  int64 strategy_id = 3;
   string symbol = 4;
   string timeframe = 5;
   google.protobuf.Timestamp start = 6;
@@ -102,6 +102,7 @@ message OrderRequest {
   double stop_price = 8;
   bool extended_hours = 9;
   string client_order_id = 10;
+  int64 strategy_id = 11;
 }
 
 message OrderResponse {

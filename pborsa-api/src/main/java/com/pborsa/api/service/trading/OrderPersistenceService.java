@@ -1,10 +1,12 @@
 package com.pborsa.api.service.trading;
 
 import com.pborsa.api.domain.dto.trading.OrderStatus;
+import com.pborsa.api.domain.dto.trading.OrderStatusReason;
 import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.domain.entity.OrderEntity;
 import com.pborsa.api.domain.entity.OrderHistoryEntity;
+import com.pborsa.api.domain.entity.StrategyEntity;
 import com.pborsa.api.repository.OrderHistoryRepository;
 import com.pborsa.api.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -49,14 +51,28 @@ public class OrderPersistenceService {
                 .setStatus(status)
                 .setExtendedHours(request.extendedHours());
 
+        Long strategyId = request.strategyId();
+        if (strategyId != null) {
+            entity.setStrategy(new StrategyEntity().setId(strategyId));
+        }
+
         return orderRepository.save(entity);
     }
 
     public void createOrderHistory(Long userId, OrderEntity entity, OrderStatus status, String message) {
+        createOrderHistory(userId, entity, status, message, null);
+    }
+
+    public void createOrderHistory(Long userId,
+                                   OrderEntity entity,
+                                   OrderStatus status,
+                                   String message,
+                                   OrderStatusReason reason) {
         OrderHistoryEntity history = new OrderHistoryEntity()
                 .setOrder(entity)
                 .setUserId(userId)
                 .setStatus(status)
+                .setReason(reason)
                 .setMessage(message);
 
         orderHistoryRepository.save(history);
@@ -93,6 +109,13 @@ public class OrderPersistenceService {
     }
 
     public OrderEntity updateStatus(UUID orderId, OrderStatus status, String message) {
+        return updateStatus(orderId, status, message, null);
+    }
+
+    public OrderEntity updateStatus(UUID orderId,
+                                    OrderStatus status,
+                                    String message,
+                                    OrderStatusReason reason) {
         OrderEntity entity = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
         if (entity.getStatus() == status && message == null) {
@@ -100,7 +123,7 @@ public class OrderPersistenceService {
         }
         entity.setStatus(status);
         OrderEntity saved = orderRepository.save(entity);
-        createOrderHistory(entity.getUserId(), saved, status, message);
+        createOrderHistory(entity.getUserId(), saved, status, message, reason);
         return saved;
     }
 
@@ -108,6 +131,14 @@ public class OrderPersistenceService {
                                              String clientOrderId,
                                              OrderStatus status,
                                              String message) {
+        return updateStatusByExternalIds(alpacaOrderId, clientOrderId, status, message, null);
+    }
+
+    public boolean updateStatusByExternalIds(String alpacaOrderId,
+                                             String clientOrderId,
+                                             OrderStatus status,
+                                             String message,
+                                             OrderStatusReason reason) {
         Optional<OrderEntity> entity = findByExternalIds(alpacaOrderId, clientOrderId);
         if (entity.isEmpty()) {
             log.warn("Order not found for alpacaOrderId={} clientOrderId={}", alpacaOrderId, clientOrderId);
@@ -125,7 +156,7 @@ public class OrderPersistenceService {
         }
         order.setStatus(status);
         OrderEntity saved = orderRepository.save(order);
-        createOrderHistory(order.getUserId(), saved, status, message);
+        createOrderHistory(order.getUserId(), saved, status, message, reason);
         return true;
     }
 

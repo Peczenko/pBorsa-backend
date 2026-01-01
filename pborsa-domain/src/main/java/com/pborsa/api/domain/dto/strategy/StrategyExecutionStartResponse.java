@@ -11,7 +11,7 @@ import java.time.Instant;
 public record StrategyExecutionStartResponse(
         String executionId,
         Long userId,
-        String strategyId,
+        Long strategyId,
         String symbol,
         Instant start,
         Instant end,
