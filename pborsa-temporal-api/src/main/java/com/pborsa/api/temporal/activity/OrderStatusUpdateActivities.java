@@ -4,8 +4,6 @@ import com.pborsa.api.domain.dto.trading.OrderStatusUpdateRequest;
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
 
-import java.util.UUID;
-
 /**
  * Temporal activities interface for updating order status in the API app.
  */
