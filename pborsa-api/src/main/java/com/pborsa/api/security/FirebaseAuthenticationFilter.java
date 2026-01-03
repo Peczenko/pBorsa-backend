@@ -73,6 +73,14 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     private Collection<GrantedAuthority> resolveAuthorities(FirebaseToken token) {
         List<GrantedAuthority> authorities = new ArrayList<>();
+        
+        // Extract admin claim (boolean)
+        Object adminClaim = token.getClaims().get(FirebaseUserPrincipal.ADMIN_CLAIM);
+        if (Boolean.TRUE.equals(adminClaim)) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        
+        // Extract roles claim (list or string)
         Object rolesClaim = token.getClaims().get("roles");
         if (rolesClaim instanceof List<?> list) {
             for (Object role : list) {
@@ -84,6 +92,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
         }
 
+        // Default to ROLE_USER if no roles assigned
         if (authorities.isEmpty()) {
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }

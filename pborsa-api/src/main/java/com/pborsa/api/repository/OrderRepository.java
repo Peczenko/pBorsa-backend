@@ -30,4 +30,8 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
               and o.userId is not null
             """)
     List<Long> findDistinctUserIdByStatusNotIn(@Param("terminalStatuses") Collection<OrderStatus> terminalStatuses);
+
+    List<OrderEntity> findByUserId(Long userId);
+
+    List<OrderEntity> findByUserIdAndStrategyId(Long userId, Long strategyId);
 }

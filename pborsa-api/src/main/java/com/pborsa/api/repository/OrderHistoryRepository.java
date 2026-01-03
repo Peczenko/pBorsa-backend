@@ -22,4 +22,19 @@ public interface OrderHistoryRepository extends JpaRepository<OrderHistoryEntity
             """)
     List<OrderHistoryEntity> findByUserIdAndCreatedAtAfter(@Param("userId") Long userId, 
                                                            @Param("afterTimestamp") Instant afterTimestamp);
+
+    @Query("""
+            SELECT h FROM OrderHistoryEntity h
+            WHERE h.order.id = :orderId
+            ORDER BY h.createdAt ASC
+            """)
+    List<OrderHistoryEntity> findByOrderIdOrderByCreatedAtAsc(@Param("orderId") UUID orderId);
+
+    @Query("""
+            SELECT h FROM OrderHistoryEntity h
+            WHERE h.userId = :userId
+            AND h.order.id = :orderId
+            ORDER BY h.createdAt ASC
+            """)
+    List<OrderHistoryEntity> findByUserIdAndOrderId(@Param("userId") Long userId, @Param("orderId") UUID orderId);
 }

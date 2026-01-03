@@ -1,6 +1,6 @@
 package com.pborsa.api.service.alpaca;
 
-import com.pborsa.api.config.alpaca.AlpacaConfiguration;
+import com.pborsa.api.config.AlpacaConfiguration;
 import com.pborsa.api.config.cache.CacheNames;
 import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
 import com.pborsa.api.exception.AlpacaException;
@@ -14,8 +14,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 /**
- * Factory for creating and caching Alpaca API client instances per user.
+ * Factory for creating and caching Alpaca API client instances per user or system.
  * Each user gets their own client configured with their API credentials.
+ * System credentials (userId = SystemConstants.SYSTEM_USER_ID) are cached separately.
  */
 @Component
 @RequiredArgsConstructor
@@ -25,10 +26,11 @@ public class AlpacaClientFactory {
     private final AlpacaConfiguration alpacaConfiguration;
 
     /**
-     * Gets or creates an Alpaca API client for the given user credentials.
+     * Gets or creates an Alpaca API client for the given credentials.
      * Clients are cached to avoid recreating them on every request.
+     * System credentials (userId = SystemConstants.SYSTEM_USER_ID) are cached separately.
      *
-     * @param credentials The user's Alpaca credentials
+     * @param credentials The user's or system's Alpaca credentials
      * @return Configured AlpacaAPI instance
      */
     @Cacheable(
@@ -79,10 +81,10 @@ public class AlpacaClientFactory {
     }
 
     /**
-     * Evicts the cached client for a user.
+     * Evicts the cached client for a user or system.
      * Should be called when credentials are updated or invalidated.
      *
-     * @param userId The user ID whose client should be evicted
+     * @param userId The user ID (or SystemConstants.SYSTEM_USER_ID for system) whose client should be evicted
      */
     @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
     public void evictClient(Long userId) {

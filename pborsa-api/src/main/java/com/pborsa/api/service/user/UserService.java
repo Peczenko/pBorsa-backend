@@ -1,10 +1,12 @@
 package com.pborsa.api.service.user;
 
 import com.pborsa.api.domain.dto.user.UserProfileDto;
+import com.pborsa.api.domain.dto.user.UserRole;
 import com.pborsa.api.domain.dto.user.UserStatus;
 import com.pborsa.api.domain.entity.UserEntity;
 import com.pborsa.api.repository.UserRepository;
 import com.pborsa.api.security.FirebaseUserPrincipal;
+import com.pborsa.api.service.admin.FirebaseAdminService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,20 +21,36 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final FirebaseAdminService firebaseAdminService;
 
     @Transactional
     public UserEntity syncUser(FirebaseUserPrincipal principal) {
         UserSyncData data = buildSyncData(principal);
+        boolean isNewUser = false;
+
         UserEntity entity = userRepository.findByFirebaseUid(data.firebaseUid())
-                .orElseGet(() -> new UserEntity()
-                        .setFirebaseUid(data.firebaseUid())
-                        .setStatus(UserStatus.ACTIVE));
+                .orElseGet(() -> {
+                    return new UserEntity()
+                            .setFirebaseUid(data.firebaseUid())
+                            .setStatus(UserStatus.ACTIVE)
+                            .setRole(UserRole.USER); // Default role
+                });
+
+        // Check if this is a new user (no ID yet)
+        if (entity.getId() == null) {
+            isNewUser = true;
+        }
 
         boolean changed = applySync(entity, data);
 
         if (changed || entity.getCreatedAt() == null) {
             entity = userRepository.save(entity);
             log.info("Synced user {}", entity.getId());
+        }
+
+        // Initialize default admin=false claim for new users
+        if (isNewUser) {
+            firebaseAdminService.initializeDefaultClaims(data.firebaseUid());
         }
 
         return entity;

@@ -1,9 +1,12 @@
 package com.pborsa.api.service.trading;
 
+import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
 import com.pborsa.api.domain.dto.trading.OrderStatus;
 import com.pborsa.api.domain.entity.OrderEntity;
 import com.pborsa.api.repository.OrderRepository;
+import com.pborsa.api.service.mapper.OrderDetailMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -14,6 +17,7 @@ import java.util.*;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderQueryService {
 
     private static final EnumSet<OrderStatus> TERMINAL_STATUSES = EnumSet.of(
@@ -24,6 +28,7 @@ public class OrderQueryService {
     );
 
     private final OrderRepository orderRepository;
+    private final OrderDetailMapper orderDetailMapper;
 
     public Optional<OrderEntity> findById(UUID id) {
         return orderRepository.findById(id);
@@ -51,6 +56,77 @@ public class OrderQueryService {
                 .stream()
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    /**
+     * Gets orders for a specific strategy.
+     * Security: Always validates userId, ensures orders belong to the user.
+     *
+     * @param userId     User ID
+     * @param strategyId Strategy ID
+     * @return List of order detail DTOs
+     */
+    public List<OrderDetailDto> getOrdersByStrategyId(Long userId, Long strategyId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+        if (strategyId == null) {
+            throw new IllegalArgumentException("Strategy ID is required");
+        }
+
+        log.debug("Getting orders for user {} and strategy {}", userId, strategyId);
+        List<OrderEntity> orders = orderRepository.findByUserIdAndStrategyId(userId, strategyId);
+        return orderDetailMapper.toOrderDetailDtoList(orders);
+    }
+
+    /**
+     * Gets order details by order ID.
+     * Security: Always validates userId, ensures order belongs to the user.
+     *
+     * @param userId  User ID
+     * @param orderId Order ID
+     * @return Optional order detail DTO
+     */
+    public Optional<OrderDetailDto> getOrderDetail(Long userId, UUID orderId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+        if (orderId == null) {
+            throw new IllegalArgumentException("Order ID is required");
+        }
+
+        log.debug("Getting order {} for user {}", orderId, userId);
+        Optional<OrderEntity> order = orderRepository.findById(orderId);
+
+        if (order.isEmpty()) {
+            return Optional.empty();
+        }
+
+        OrderEntity orderEntity = order.get();
+        // Security check: ensure order belongs to the user
+        if (!orderEntity.getUserId().equals(userId)) {
+            log.warn("User {} attempted to access order {} belonging to user {}", userId, orderId, orderEntity.getUserId());
+            return Optional.empty();
+        }
+
+        return Optional.of(orderDetailMapper.toOrderDetailDto(orderEntity));
+    }
+
+    /**
+     * Gets order details by order ID without user validation.
+     * Admin only - no security check performed here.
+     *
+     * @param orderId Order ID
+     * @return Optional order detail DTO
+     */
+    public Optional<OrderDetailDto> getOrderDetailAdmin(UUID orderId) {
+        if (orderId == null) {
+            throw new IllegalArgumentException("Order ID is required");
+        }
+
+        log.debug("Admin getting order {}", orderId);
+        return orderRepository.findById(orderId)
+                .map(orderDetailMapper::toOrderDetailDto);
     }
 }
 

@@ -1,5 +1,6 @@
 package com.pborsa.api.domain.entity;
 
+import com.pborsa.api.domain.dto.user.UserRole;
 import com.pborsa.api.domain.dto.user.UserStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,6 +48,10 @@ public class UserEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.USER;
 
     @CreationTimestamp
     private Instant createdAt;

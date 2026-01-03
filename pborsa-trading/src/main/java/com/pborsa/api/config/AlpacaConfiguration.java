@@ -1,4 +1,4 @@
-package com.pborsa.api.config.alpaca;
+package com.pborsa.api.config;
 
 import lombok.Getter;
 import lombok.Setter;
