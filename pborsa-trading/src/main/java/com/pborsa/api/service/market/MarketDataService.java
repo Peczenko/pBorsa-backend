@@ -8,7 +8,7 @@ import com.pborsa.api.domain.dto.market.StockQuoteDto;
 import com.pborsa.api.domain.dto.market.StockTradeDto;
 import com.pborsa.api.exception.AlpacaException;
 import com.pborsa.api.service.alpaca.AlpacaClientFactory;
-import com.pborsa.api.service.credentials.UserCredentialsService;
+import com.pborsa.api.service.credentials.UnifiedCredentialsService;
 import com.pborsa.api.service.mapper.MarketDataMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,14 +43,26 @@ import java.util.concurrent.CompletableFuture;
 public class MarketDataService {
 
     private final AlpacaClientFactory clientFactory;
-    private final UserCredentialsService credentialsService;
+    private final UnifiedCredentialsService credentialsService;
     private final MarketDataMapper marketDataMapper;
+
+    /**
+     * Gets the latest quote for a symbol using system credentials.
+     * Cached for a short duration to reduce API calls.
+     *
+     * @param symbol Stock symbol
+     * @return Latest quote data
+     */
+    @Cacheable(value = CacheNames.QUOTES, key = "#symbol")
+    public StockQuoteDto getLatestQuote(String symbol) {
+        return getLatestQuote(null, symbol);
+    }
 
     /**
      * Gets the latest quote for a symbol.
      * Cached for a short duration to reduce API calls.
      *
-     * @param userId User ID
+     * @param userId User ID (null for system credentials)
      * @param symbol Stock symbol
      * @return Latest quote data
      */
@@ -88,6 +100,14 @@ public class MarketDataService {
     }
 
     /**
+     * Async version of getLatestQuote using system credentials.
+     */
+    @Async("alpacaAsyncExecutor")
+    public CompletableFuture<StockQuoteDto> getLatestQuoteAsync(String symbol) {
+        return CompletableFuture.supplyAsync(() -> getLatestQuote(symbol));
+    }
+
+    /**
      * Async version of getLatestQuote.
      */
     @Async("alpacaAsyncExecutor")
@@ -96,9 +116,19 @@ public class MarketDataService {
     }
 
     /**
+     * Gets the latest quotes for multiple symbols using system credentials.
+     *
+     * @param symbols Collection of stock symbols
+     * @return List of quote data
+     */
+    public List<StockQuoteDto> getLatestQuotes(Collection<String> symbols) {
+        return getLatestQuotes(null, symbols);
+    }
+
+    /**
      * Gets the latest quotes for multiple symbols.
      *
-     * @param userId  User ID
+     * @param userId  User ID (null for system credentials)
      * @param symbols Collection of stock symbols
      * @return List of quote data
      */
@@ -132,6 +162,14 @@ public class MarketDataService {
                     e
             );
         }
+    }
+
+    /**
+     * Async version of getLatestQuotes using system credentials.
+     */
+    @Async("alpacaAsyncExecutor")
+    public CompletableFuture<List<StockQuoteDto>> getLatestQuotesAsync(Collection<String> symbols) {
+        return CompletableFuture.supplyAsync(() -> getLatestQuotes(symbols));
     }
 
     /**
