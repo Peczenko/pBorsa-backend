@@ -7,6 +7,8 @@ import com.pborsa.api.domain.event.OrderStatusUpdatedEvent;
 import com.pborsa.api.tradingengine.v1.OrderStatusUpdate;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+
 /**
  * Mapper for converting domain order status events to gRPC protobuf messages.
  */
@@ -53,6 +55,7 @@ public class OrderStatusProtoMapper {
             case FILLED -> com.pborsa.api.tradingengine.v1.OrderStatus.FILLED;
             case DONE_FOR_DAY -> com.pborsa.api.tradingengine.v1.OrderStatus.DONE_FOR_DAY;
             case CANCELED -> com.pborsa.api.tradingengine.v1.OrderStatus.CANCELLED;
+            case CANCEL_REQUESTED -> com.pborsa.api.tradingengine.v1.OrderStatus.CANCELLED_REQUESTED;
             case EXPIRED -> com.pborsa.api.tradingengine.v1.OrderStatus.EXPIRED;
             case REPLACED -> com.pborsa.api.tradingengine.v1.OrderStatus.REPLACED;
             case PENDING_CANCEL -> com.pborsa.api.tradingengine.v1.OrderStatus.PENDING_CANCEL;
@@ -79,7 +82,7 @@ public class OrderStatusProtoMapper {
         };
     }
 
-    private Timestamp toTimestamp(java.time.Instant instant) {
+    private Timestamp toTimestamp(Instant instant) {
         return Timestamp.newBuilder()
                 .setSeconds(instant.getEpochSecond())
                 .setNanos(instant.getNano())

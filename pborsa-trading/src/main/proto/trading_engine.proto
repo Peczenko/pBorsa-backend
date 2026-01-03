@@ -102,6 +102,7 @@ enum OrderStatus {
   SUSPENDED = 16;
   CALCULATED = 17;
   HELD = 18;
+  CANCEL_REQUESTED = 19;
 }
 
 enum OrderStatusReason {
