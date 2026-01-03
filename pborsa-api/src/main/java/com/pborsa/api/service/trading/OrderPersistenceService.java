@@ -13,25 +13,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service responsible for persisting orders and order history.
+ * Follows single responsibility principle - only handles database operations.
+ * Event publishing is delegated to OrderStatusEventPublisher.
+ * Query operations are delegated to OrderQueryService.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderPersistenceService {
 
-    private static final EnumSet<OrderStatus> TERMINAL_STATUSES = EnumSet.of(
-            OrderStatus.FILLED,
-            OrderStatus.CANCELED,
-            OrderStatus.EXPIRED,
-            OrderStatus.REJECTED
-    );
-
     private final OrderRepository orderRepository;
     private final OrderHistoryRepository orderHistoryRepository;
+    private final OrderStatusEventPublisher eventPublisher;
+    private final OrderQueryService orderQueryService;
 
     private OrderEntity createOrder(Long userId,
                                     TradingApiOrderRequest request,
@@ -63,7 +62,7 @@ public class OrderPersistenceService {
         createOrderHistory(userId, entity, status, message, null);
     }
 
-    public void createOrderHistory(Long userId,
+    public OrderHistoryEntity createOrderHistory(Long userId,
                                    OrderEntity entity,
                                    OrderStatus status,
                                    String message,
@@ -75,7 +74,12 @@ public class OrderPersistenceService {
                 .setReason(reason)
                 .setMessage(message);
 
-        orderHistoryRepository.save(history);
+        OrderHistoryEntity saved = orderHistoryRepository.save(history);
+        
+        // Publish event for gRPC notifications
+        eventPublisher.publishStatusUpdateEvent(entity, saved, status, message, reason);
+        
+        return saved;
     }
 
     public OrderEntity updateFromResponse(OrderEntity entity, OrderResponse response) {
@@ -99,9 +103,6 @@ public class OrderPersistenceService {
         return orderRepository.save(entity);
     }
 
-    public Optional<OrderEntity> findById(UUID id) {
-        return orderRepository.findById(id);
-    }
 
     public OrderEntity markStatus(OrderEntity entity, OrderStatus status) {
         entity.setStatus(status);
@@ -116,13 +117,14 @@ public class OrderPersistenceService {
                                     OrderStatus status,
                                     String message,
                                     OrderStatusReason reason) {
-        OrderEntity entity = orderRepository.findById(orderId)
+        OrderEntity entity = orderQueryService.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
         if (entity.getStatus() == status && message == null) {
             return entity;
         }
         entity.setStatus(status);
         OrderEntity saved = orderRepository.save(entity);
+        // createOrderHistory will publish the event
         createOrderHistory(entity.getUserId(), saved, status, message, reason);
         return saved;
     }
@@ -139,7 +141,7 @@ public class OrderPersistenceService {
                                              OrderStatus status,
                                              String message,
                                              OrderStatusReason reason) {
-        Optional<OrderEntity> entity = findByExternalIds(alpacaOrderId, clientOrderId);
+        Optional<OrderEntity> entity = orderQueryService.findByExternalIds(alpacaOrderId, clientOrderId);
         if (entity.isEmpty()) {
             log.warn("Order not found for alpacaOrderId={} clientOrderId={}", alpacaOrderId, clientOrderId);
             return false;
@@ -156,33 +158,11 @@ public class OrderPersistenceService {
         }
         order.setStatus(status);
         OrderEntity saved = orderRepository.save(order);
+        // createOrderHistory will publish the event
         createOrderHistory(order.getUserId(), saved, status, message, reason);
         return true;
     }
 
-    public boolean hasOpenOrders(Long userId) {
-        return orderRepository.countByUserIdAndStatusNotIn(userId, TERMINAL_STATUSES) > 0;
-    }
-
-    public List<Long> findUsersWithOpenOrders() {
-        return orderRepository.findDistinctUserIdByStatusNotIn(TERMINAL_STATUSES)
-                .stream()
-                .filter(userId -> userId != null)
-                .toList();
-    }
-
-    private Optional<OrderEntity> findByExternalIds(String alpacaOrderId, String clientOrderId) {
-        if (alpacaOrderId != null && !alpacaOrderId.isBlank()) {
-            Optional<OrderEntity> byAlpaca = orderRepository.findByAlpacaOrderId(alpacaOrderId);
-            if (byAlpaca.isPresent()) {
-                return byAlpaca;
-            }
-        }
-        if (clientOrderId != null && !clientOrderId.isBlank()) {
-            return orderRepository.findByClientOrderId(clientOrderId);
-        }
-        return Optional.empty();
-    }
 
     public OrderEntity createNewOrder(Long userId, TradingApiOrderRequest request, String workflowId) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.ACCEPTED_BY_APP, workflowId);
