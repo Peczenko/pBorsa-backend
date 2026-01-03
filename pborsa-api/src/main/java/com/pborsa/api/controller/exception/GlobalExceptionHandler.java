@@ -1,6 +1,7 @@
 package com.pborsa.api.controller.exception;
 
 import com.pborsa.api.controller.response.ApiResponse;
+import com.pborsa.api.exception.AccessDeniedException;
 import com.pborsa.api.exception.AlpacaException;
 import com.pborsa.api.exception.CredentialsNotFoundException;
 import com.pborsa.api.exception.StrategyExecutionException;
@@ -22,6 +23,14 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("ACCESS_DENIED", ex.getMessage()));
+    }
 
     @ExceptionHandler(CredentialsNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleCredentialsNotFound(CredentialsNotFoundException ex) {
