@@ -1,7 +1,8 @@
 package com.pborsa.api.service.trading;
 
 import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
-import com.pborsa.api.domain.dto.trading.*;
+import com.pborsa.api.domain.dto.trading.OrderResponse;
+import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.exception.AlpacaException;
 import com.pborsa.api.service.alpaca.AlpacaClientFactory;
 import com.pborsa.api.service.credentials.UserCredentialsService;
@@ -10,19 +11,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jacobpeterson.alpaca.AlpacaAPI;
 import net.jacobpeterson.alpaca.openapi.trader.ApiException;
-import net.jacobpeterson.alpaca.openapi.trader.model.Order;
-import net.jacobpeterson.alpaca.openapi.trader.model.PostOrderRequest;
-import net.jacobpeterson.alpaca.openapi.trader.model.OrderSide;
-import net.jacobpeterson.alpaca.openapi.trader.model.OrderType;
-import net.jacobpeterson.alpaca.openapi.trader.model.TimeInForce;
-import org.springframework.scheduling.annotation.Async;
+import net.jacobpeterson.alpaca.openapi.trader.model.*;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import static com.pborsa.api.domain.dto.trading.OrderResponse.buildRejectedOrderResponse;
 

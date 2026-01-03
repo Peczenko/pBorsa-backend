@@ -29,7 +29,7 @@ public class TradeUpdatesStreamManager {
 
     private final AlpacaClientFactory clientFactory;
     private final UserCredentialsService credentialsService;
-    private final OrderPersistenceService orderPersistenceService;
+    private final OrderQueryService orderQueryService;
     private final TradeUpdatesProcessor tradeUpdatesProcessor;
     private final Executor tradingExecutor;
 
@@ -43,12 +43,12 @@ public class TradeUpdatesStreamManager {
 
     public TradeUpdatesStreamManager(AlpacaClientFactory clientFactory,
                                      UserCredentialsService credentialsService,
-                                     OrderPersistenceService orderPersistenceService,
+                                     OrderQueryService orderQueryService,
                                      TradeUpdatesProcessor tradeUpdatesProcessor,
                                      @Qualifier("tradingExecutor") Executor tradingExecutor) {
         this.clientFactory = clientFactory;
         this.credentialsService = credentialsService;
-        this.orderPersistenceService = orderPersistenceService;
+        this.orderQueryService = orderQueryService;
         this.tradeUpdatesProcessor = tradeUpdatesProcessor;
         this.tradingExecutor = tradingExecutor;
     }
@@ -76,7 +76,7 @@ public class TradeUpdatesStreamManager {
 
     @Scheduled(fixedDelayString = "${alpaca.trade-updates.sync-interval-ms:60000}")
     public void syncStreams() {
-        Set<Long> activeUsers = new HashSet<>(orderPersistenceService.findUsersWithOpenOrders());
+        Set<Long> activeUsers = new HashSet<>(orderQueryService.findUsersWithOpenOrders());
         for (Long userId : activeUsers) {
             ensureStream(userId);
         }
@@ -95,7 +95,7 @@ public class TradeUpdatesStreamManager {
             }
 
             long idleForMs = now - state.lastActivityMs.get();
-            if (idleForMs >= idleTimeoutMs && !orderPersistenceService.hasOpenOrders(userId)) {
+            if (idleForMs >= idleTimeoutMs && !orderQueryService.hasOpenOrders(userId)) {
                 log.info("Closing trade updates stream for user {} after {}ms idle", userId, idleForMs);
                 stopStream(userId);
             }

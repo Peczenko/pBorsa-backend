@@ -10,11 +10,14 @@ import "google/protobuf/timestamp.proto";
 
 service TradingEngineService {
   rpc ExecuteStrategy(stream StrategyExecutionChunk) returns (ExecutionAck);
+  // API calls this when order status changes
+  rpc NotifyOrderStatusUpdate(OrderStatusUpdate) returns (OrderStatusUpdateAck);
 }
 
 // Accepts trading/order requests (gRPC path into pBorsa API).
 service TradingOrderService {
   rpc PlaceOrder(OrderRequest) returns (OrderResponse);
+  // StreamOrderUpdates removed - using client-initiated calls via TradingEngineService.NotifyOrderStatusUpdate instead
 }
 
 message StrategyExecutionHeader {
@@ -81,14 +84,35 @@ enum TimeInForce {
 
 enum OrderStatus {
   ORDER_STATUS_UNSPECIFIED = 0;
-  NEW = 1;
-  PARTIALLY_FILLED = 2;
-  FILLED = 3;
-  CANCELLED = 4;
-  EXPIRED = 5;
-  REJECTED = 6;
-  PENDING_NEW = 7;
-  PENDING_CANCEL = 8;
+  ACCEPTED_BY_APP = 1;
+  NEW = 2;
+  PARTIALLY_FILLED = 3;
+  FILLED = 4;
+  DONE_FOR_DAY = 5;
+  CANCELLED = 6;
+  EXPIRED = 7;
+  REPLACED = 8;
+  PENDING_CANCEL = 9;
+  PENDING_REPLACE = 10;
+  REJECTED = 11;
+  PENDING_NEW = 12;
+  ACCEPTED = 13;
+  ACCEPTED_FOR_BIDDING = 14;
+  STOPPED = 15;
+  SUSPENDED = 16;
+  CALCULATED = 17;
+  HELD = 18;
+  CANCEL_REQUESTED = 19;
+}
+
+enum OrderStatusReason {
+  ORDER_STATUS_REASON_UNSPECIFIED = 0;
+  INSUFFICIENT_FUNDS = 1;
+  RATE_LIMIT = 2;
+  INVALID_ORDER = 3;
+  MARKET_CLOSED = 4;
+  AUTH_ERROR = 5;
+  UNKNOWN = 6;
 }
 
 message OrderRequest {
@@ -108,4 +132,29 @@ message OrderRequest {
 message OrderResponse {
   string workflow_id = 1;
   OrderStatus status = 2;
+}
+
+message OrderStatusUpdate {
+  // Order identifiers
+  string order_id = 1;              // UUID as string
+  string workflow_id = 2;           // Optional
+  string client_order_id = 3;       // Required - used to route to correct trading engine
+  string alpaca_order_id = 4;       // Optional
+  
+  // Status information
+  OrderStatus status = 5;
+  OrderStatusReason reason = 6;     // Optional
+  string message = 7;               // Optional
+  
+  // Timestamps
+  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp created_at = 9;  // Order creation time
+  
+  // Resume token for reconnection (UUID string of order_history.id)
+  string resume_token = 10;
+}
+
+message OrderStatusUpdateAck {
+  bool received = 1;
+  string message = 2;
 }

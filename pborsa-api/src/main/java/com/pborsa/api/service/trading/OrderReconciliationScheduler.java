@@ -44,16 +44,15 @@ public class OrderReconciliationScheduler {
             return;
         }
 
-        Map<Long, List<OrderEntity>> byUser = candidates.stream()
-                .collect(Collectors.groupingBy(OrderEntity::getUserId));
-
-        for (var entry : byUser.entrySet()) {
-            Long userId = entry.getKey();
-            List<OrderEntity> orders = entry.getValue();
-            tradingExecutor.execute(() -> processor.reconcileUser(userId, orders, till));
-        }
+        long userCount = candidates.stream()
+                .collect(Collectors.groupingBy(OrderEntity::getUserId))
+                .entrySet()
+                .stream()
+                .peek(entry -> tradingExecutor.execute(() -> 
+                        processor.reconcileUser(entry.getKey(), entry.getValue(), till)))
+                .count();
 
         log.info("Order reconciliation scheduled users={} orders={} till={}",
-                byUser.size(), candidates.size(), till);
+                userCount, candidates.size(), till);
     }
 }
