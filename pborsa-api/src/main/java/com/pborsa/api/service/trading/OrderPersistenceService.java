@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,7 +21,6 @@ import java.util.UUID;
  * Service responsible for persisting orders and order history.
  * Follows single responsibility principle - only handles database operations.
  * Event publishing is delegated to OrderStatusEventPublisher.
- * Query operations are delegated to OrderQueryService.
  */
 @Service
 @RequiredArgsConstructor
@@ -30,7 +30,6 @@ public class OrderPersistenceService {
     private final OrderRepository orderRepository;
     private final OrderHistoryRepository orderHistoryRepository;
     private final OrderStatusEventPublisher eventPublisher;
-    private final OrderQueryService orderQueryService;
 
     private OrderEntity createOrder(Long userId,
                                     TradingApiOrderRequest request,
@@ -117,7 +116,7 @@ public class OrderPersistenceService {
                                     OrderStatus status,
                                     String message,
                                     OrderStatusReason reason) {
-        OrderEntity entity = orderQueryService.findById(orderId)
+        OrderEntity entity = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
         if (entity.getStatus() == status && message == null) {
             return entity;
@@ -141,7 +140,7 @@ public class OrderPersistenceService {
                                              OrderStatus status,
                                              String message,
                                              OrderStatusReason reason) {
-        Optional<OrderEntity> entity = orderQueryService.findByExternalIds(alpacaOrderId, clientOrderId);
+        Optional<OrderEntity> entity = findByExternalIds(alpacaOrderId, clientOrderId);
         if (entity.isEmpty()) {
             log.warn("Order not found for alpacaOrderId={} clientOrderId={}", alpacaOrderId, clientOrderId);
             return false;
@@ -163,6 +162,23 @@ public class OrderPersistenceService {
         return true;
     }
 
+    /**
+     * Finds order by external IDs (alpacaOrderId or clientOrderId).
+     * Used internally for status updates.
+     */
+    private Optional<OrderEntity> findByExternalIds(String alpacaOrderId, String clientOrderId) {
+        if (alpacaOrderId != null && !alpacaOrderId.isBlank()) {
+            Optional<OrderEntity> byAlpaca = orderRepository.findByAlpacaOrderId(alpacaOrderId);
+            if (byAlpaca.isPresent()) {
+                return byAlpaca;
+            }
+        }
+        if (clientOrderId != null && !clientOrderId.isBlank()) {
+            return orderRepository.findByClientOrderId(clientOrderId);
+        }
+        return Optional.empty();
+    }
+
 
     public OrderEntity createNewOrder(Long userId, TradingApiOrderRequest request, String workflowId) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.ACCEPTED_BY_APP, workflowId);
@@ -174,5 +190,43 @@ public class OrderPersistenceService {
         OrderEntity entity = createOrder(userId, request, OrderStatus.REJECTED, null);
         createOrderHistory(userId, entity, OrderStatus.REJECTED, message);
         return entity;
+    }
+
+    /**
+     * Finds orders by user ID.
+     * Security: Always filters by userId to ensure user scoping.
+     *
+     * @param userId User ID
+     * @return List of orders for the user
+     */
+    public List<OrderEntity> findOrdersByUserId(Long userId) {
+        log.debug("Finding orders by user ID: {}", userId);
+        return orderRepository.findByUserId(userId);
+    }
+
+    /**
+     * Finds orders by user ID and strategy ID.
+     * Security: Always filters by userId to ensure user scoping.
+     *
+     * @param userId     User ID
+     * @param strategyId Strategy ID
+     * @return List of orders for the user and strategy
+     */
+    public List<OrderEntity> findOrdersByUserIdAndStrategyId(Long userId, Long strategyId) {
+        log.debug("Finding orders by user ID: {} and strategy ID: {}", userId, strategyId);
+        return orderRepository.findByUserIdAndStrategyId(userId, strategyId);
+    }
+
+    /**
+     * Finds an order by ID.
+     * Note: This method does not filter by userId - use with caution.
+     * Prefer methods that include userId for user-scoped queries.
+     *
+     * @param orderId Order ID
+     * @return Optional order entity
+     */
+    public Optional<OrderEntity> findOrderById(UUID orderId) {
+        log.debug("Finding order by ID: {}", orderId);
+        return orderRepository.findById(orderId);
     }
 }
