@@ -79,7 +79,7 @@ public class OrderReconciliationProcessor {
                 orderPersistenceService.updateStatusByExternalIds(
                         remote.orderId(),
                         remote.clientOrderId(),
-                        OrderStatus.CANCELED,
+                        OrderStatus.CANCEL_REQUESTED,
                         MESSAGE_NO_CHANGE_CLOSE
                 );
                 log.info("Reconcile closed order user={} alpacaOrderId={}", userId, remote.orderId());

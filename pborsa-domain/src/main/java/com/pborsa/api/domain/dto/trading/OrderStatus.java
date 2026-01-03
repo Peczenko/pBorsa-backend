@@ -30,6 +30,8 @@ public enum OrderStatus {
      */
     CANCELED,
 
+    CANCEL_REQUESTED,
+
     /**
      * Order has expired.
      */
