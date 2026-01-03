@@ -56,8 +56,11 @@ python -m venv .venv
 . .venv/Scripts/activate  # or source .venv/bin/activate on *nix
 pip install grpcio grpcio-tools
 
-# generate Python stubs if missing
-python -m grpc_tools.protoc -I pborsa-trading/src/main/proto --python_out=. --grpc_python_out=. pborsa-trading/src/main/proto/trading_engine.proto
+# generate Python stubs if missing (or after updating proto file)
+# Option 1: Use helper script (recommended)
+python generate_python_proto.py
+# Option 2: Manual command
+# python -m grpc_tools.protoc -I pborsa-trading/src/main/proto --python_out=. --grpc_python_out=. pborsa-trading/src/main/proto/trading_engine.proto
 
 # start mock server on 0.0.0.0:9090
 python client.py
