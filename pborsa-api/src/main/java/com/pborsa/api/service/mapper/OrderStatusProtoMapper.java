@@ -55,7 +55,7 @@ public class OrderStatusProtoMapper {
             case FILLED -> com.pborsa.api.tradingengine.v1.OrderStatus.FILLED;
             case DONE_FOR_DAY -> com.pborsa.api.tradingengine.v1.OrderStatus.DONE_FOR_DAY;
             case CANCELED -> com.pborsa.api.tradingengine.v1.OrderStatus.CANCELLED;
-            case CANCEL_REQUESTED -> com.pborsa.api.tradingengine.v1.OrderStatus.CANCELLED_REQUESTED;
+            case CANCEL_REQUESTED -> com.pborsa.api.tradingengine.v1.OrderStatus.CANCEL_REQUESTED;
             case EXPIRED -> com.pborsa.api.tradingengine.v1.OrderStatus.EXPIRED;
             case REPLACED -> com.pborsa.api.tradingengine.v1.OrderStatus.REPLACED;
             case PENDING_CANCEL -> com.pborsa.api.tradingengine.v1.OrderStatus.PENDING_CANCEL;
@@ -89,4 +89,5 @@ public class OrderStatusProtoMapper {
                 .build();
     }
 }
+
 
