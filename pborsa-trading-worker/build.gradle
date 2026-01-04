@@ -17,7 +17,6 @@ dependencies {
 
     // Database
     implementation 'org.postgresql:postgresql'
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 }
 
 springBoot {
