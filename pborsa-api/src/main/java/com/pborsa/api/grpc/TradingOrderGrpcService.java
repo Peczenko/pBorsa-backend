@@ -52,7 +52,7 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
                 .stopPrice(req.getStopPrice() != 0d ? BigDecimal.valueOf(req.getStopPrice()) : null)
                 .extendedHours(req.getExtendedHours())
                 .clientOrderId(req.getClientOrderId().isBlank() ? null : req.getClientOrderId())
-                .strategyId(req.getStrategyId() > 0 ? req.getStrategyId() : null)
+                .userStrategyId(req.getStrategyId() > 0 ? req.getStrategyId() : null)
                 .build();
     }
 

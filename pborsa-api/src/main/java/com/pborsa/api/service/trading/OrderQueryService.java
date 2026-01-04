@@ -59,23 +59,23 @@ public class OrderQueryService {
     }
 
     /**
-     * Gets orders for a specific strategy.
+     * Gets orders for a specific user strategy.
      * Security: Always validates userId, ensures orders belong to the user.
      *
-     * @param userId     User ID
-     * @param strategyId Strategy ID
+     * @param userId         User ID
+     * @param userStrategyId User strategy ID
      * @return List of order detail DTOs
      */
-    public List<OrderDetailDto> getOrdersByStrategyId(Long userId, Long strategyId) {
+    public List<OrderDetailDto> getOrdersByUserStrategyId(Long userId, Long userStrategyId) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID is required");
         }
-        if (strategyId == null) {
-            throw new IllegalArgumentException("Strategy ID is required");
+        if (userStrategyId == null) {
+            throw new IllegalArgumentException("User strategy ID is required");
         }
 
-        log.debug("Getting orders for user {} and strategy {}", userId, strategyId);
-        List<OrderEntity> orders = orderRepository.findByUserIdAndStrategyId(userId, strategyId);
+        log.debug("Getting orders for user {} and user strategy {}", userId, userStrategyId);
+        List<OrderEntity> orders = orderRepository.findByUserIdAndUserStrategyId(userId, userStrategyId);
         return orderDetailMapper.toOrderDetailDtoList(orders);
     }
 

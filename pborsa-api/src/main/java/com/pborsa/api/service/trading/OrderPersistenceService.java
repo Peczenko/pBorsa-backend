@@ -6,7 +6,7 @@ import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.domain.dto.trading.OrderResponse;
 import com.pborsa.api.domain.entity.OrderEntity;
 import com.pborsa.api.domain.entity.OrderHistoryEntity;
-import com.pborsa.api.domain.entity.StrategyEntity;
+import com.pborsa.api.domain.entity.UserStrategyEntity;
 import com.pborsa.api.repository.OrderHistoryRepository;
 import com.pborsa.api.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -49,9 +49,9 @@ public class OrderPersistenceService {
                 .setStatus(status)
                 .setExtendedHours(request.extendedHours());
 
-        Long strategyId = request.strategyId();
-        if (strategyId != null) {
-            entity.setStrategy(new StrategyEntity().setId(strategyId));
+        Long userStrategyId = request.userStrategyId();
+        if (userStrategyId != null) {
+            entity.setUserStrategy(new UserStrategyEntity().setId(userStrategyId));
         }
 
         return orderRepository.save(entity);
@@ -205,16 +205,16 @@ public class OrderPersistenceService {
     }
 
     /**
-     * Finds orders by user ID and strategy ID.
+     * Finds orders by user ID and user strategy ID.
      * Security: Always filters by userId to ensure user scoping.
      *
-     * @param userId     User ID
-     * @param strategyId Strategy ID
+     * @param userId         User ID
+     * @param userStrategyId User strategy ID
      * @return List of orders for the user and strategy
      */
-    public List<OrderEntity> findOrdersByUserIdAndStrategyId(Long userId, Long strategyId) {
-        log.debug("Finding orders by user ID: {} and strategy ID: {}", userId, strategyId);
-        return orderRepository.findByUserIdAndStrategyId(userId, strategyId);
+    public List<OrderEntity> findOrdersByUserIdAndUserStrategyId(Long userId, Long userStrategyId) {
+        log.debug("Finding orders by user ID: {} and user strategy ID: {}", userId, userStrategyId);
+        return orderRepository.findByUserIdAndUserStrategyId(userId, userStrategyId);
     }
 
     /**

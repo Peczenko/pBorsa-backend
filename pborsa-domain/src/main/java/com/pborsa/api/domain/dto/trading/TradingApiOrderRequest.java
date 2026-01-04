@@ -37,7 +37,7 @@ public record TradingApiOrderRequest(
 
         String clientOrderId,
 
-        Long strategyId
+        Long userStrategyId
 ) {
     /**
      * Creates a market buy order.

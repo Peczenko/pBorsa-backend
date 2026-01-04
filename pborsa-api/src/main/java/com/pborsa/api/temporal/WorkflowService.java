@@ -67,14 +67,4 @@ public class WorkflowService {
         workflow.cancel();
     }
 
-    public String startTradeAsync(Long userId, TradingApiOrderRequest request) {
-        OrderExecutionResult result = orderExecutionService.startExecution(OrderExecutionRequest.builder()
-                .userId(userId)
-                .order(request)
-                .build());
-        if (!result.accepted()) {
-            throw new AlpacaException(AlpacaException.ErrorCode.INVALID_ORDER, result.message());
-        }
-        return result.workflowId();
-    }
 }

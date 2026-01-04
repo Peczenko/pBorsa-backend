@@ -33,5 +33,5 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
 
     List<OrderEntity> findByUserId(Long userId);
 
-    List<OrderEntity> findByUserIdAndStrategyId(Long userId, Long strategyId);
+    List<OrderEntity> findByUserIdAndUserStrategyId(Long userId, Long userStrategyId);
 }

@@ -41,8 +41,8 @@ public class OrderEntity {
     private Long userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "strategy_id", foreignKey = @ForeignKey(name = "fk_orders_strategy"))
-    private StrategyEntity strategy;
+    @JoinColumn(name = "user_strategy_id", foreignKey = @ForeignKey(name = "fk_orders_user_strategy"))
+    private UserStrategyEntity userStrategy;
 
     private String workflowId;
     private String alpacaOrderId;
