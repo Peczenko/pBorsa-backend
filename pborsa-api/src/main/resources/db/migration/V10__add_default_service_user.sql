@@ -1,0 +1,2 @@
+insert into public.users (id, email, display_name, provider, status, created_at, updated_at, firebase_uid, role)
+values (0, 'admin_user@gmail.com', 'Admin User', 'password', 'ACTIVE', now(), now(), 'GeCbW83GgobWFFL7Y2GyEdMvV9B3', 'ADMIN');
