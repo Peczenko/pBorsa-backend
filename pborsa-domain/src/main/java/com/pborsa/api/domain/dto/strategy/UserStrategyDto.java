@@ -3,16 +3,18 @@ package com.pborsa.api.domain.dto.strategy;
 import java.time.Instant;
 
 /**
- * DTO representing a strategy.
+ * DTO representing a user's strategy subscription.
  */
-public record StrategyDto(
+public record UserStrategyDto(
         Long id,
         String name,
-        String description,
-        Boolean active,
+        BaseStrategyDto baseStrategy,
+        String symbol,
+        String status,
         Instant createdAt,
         Instant updatedAt
 ) {
 }
+
 
 

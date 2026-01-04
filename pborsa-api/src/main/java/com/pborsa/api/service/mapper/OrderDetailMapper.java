@@ -24,7 +24,7 @@ public class OrderDetailMapper {
             return null;
         }
 
-        Long strategyId = entity.getStrategy() != null ? entity.getStrategy().getId() : null;
+        Long userStrategyId = entity.getUserStrategy() != null ? entity.getUserStrategy().getId() : null;
 
         return new OrderDetailDto(
                 entity.getId(),
@@ -49,7 +49,7 @@ public class OrderDetailMapper {
                 entity.getExpiredAt(),
                 entity.getCancelledAt(),
                 null, // assetClass - not stored in OrderEntity
-                strategyId
+                userStrategyId
         );
     }
 

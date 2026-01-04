@@ -44,24 +44,24 @@ public class OrderController {
     private final SecurityService securityService;
 
     /**
-     * Gets all orders for a strategy.
+     * Gets all orders for a user strategy.
      *
-     * @param userId     User ID from path (admin can query any user, regular users only themselves)
-     * @param strategyId Strategy ID
-     * @param principal  Authenticated user principal
-     * @return List of orders for the strategy
+     * @param userId         User ID from path (admin can query any user, regular users only themselves)
+     * @param userStrategyId User strategy ID
+     * @param principal      Authenticated user principal
+     * @return List of orders for the user strategy
      */
-    @GetMapping("/{userId}/strategy/{strategyId}")
-    @Operation(summary = "Get orders by strategy", description = "Gets all orders for a specific strategy. Regular users can only access their own orders; admins can access any user's orders.")
+    @GetMapping("/{userId}/strategy/{userStrategyId}")
+    @Operation(summary = "Get orders by user strategy", description = "Gets all orders for a specific user strategy. Regular users can only access their own orders; admins can access any user's orders.")
     @ApiResponseDoc(code = "200", description = "Orders retrieved successfully", implementation = OrderDetailListResponseDoc.class)
     @ApiResponseDoc(code = "401", description = "Unauthorized", implementation = ApiErrorResponseDoc.class)
     @ApiResponseDoc(code = "403", description = "Access denied", implementation = ApiErrorResponseDoc.class)
-    public ResponseEntity<ApiResponse<List<OrderDetailDto>>> getOrdersByStrategy(
+    public ResponseEntity<ApiResponse<List<OrderDetailDto>>> getOrdersByUserStrategy(
             @Parameter(description = "User ID") @PathVariable Long userId,
-            @Parameter(description = "Strategy ID") @PathVariable Long strategyId,
+            @Parameter(description = "User Strategy ID") @PathVariable Long userStrategyId,
             @AuthenticationPrincipal FirebaseUserPrincipal principal) {
         Long targetUserId = securityService.resolveTargetUserId(userId, principal);
-        List<OrderDetailDto> orders = orderQueryService.getOrdersByStrategyId(targetUserId, strategyId);
+        List<OrderDetailDto> orders = orderQueryService.getOrdersByUserStrategyId(targetUserId, userStrategyId);
         return ResponseEntity.ok(ApiResponse.success(orders));
     }
 

@@ -10,8 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * DTO representing order details with strategy information.
- * Extends OrderResponse with strategyId field.
+ * DTO representing order details with user strategy information.
  */
 public record OrderDetailDto(
         UUID id,  // Internal order ID
@@ -36,7 +35,7 @@ public record OrderDetailDto(
         Instant expiredAt,
         Instant cancelledAt,
         String assetClass,
-        Long strategyId  // Strategy ID this order belongs to
+        Long userStrategyId  // User strategy ID this order belongs to
 ) {
 }
 
