@@ -1,126 +1,124 @@
 package com.pborsa.api.service.strategy;
 
-import com.pborsa.api.domain.dto.strategy.StrategyDto;
-import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
-import com.pborsa.api.domain.dto.strategy.StrategyExecutionStartRequest;
-import com.pborsa.api.domain.dto.strategy.StrategyExecutionStartResponse;
-import com.pborsa.api.exception.StrategyExecutionException;
-import com.pborsa.api.repository.StrategyRepository;
-import com.pborsa.api.service.credentials.UserCredentialsService;
-import com.pborsa.api.service.mapper.StrategyMapper;
+import com.pborsa.api.domain.dto.strategy.BaseStrategyDto;
+import com.pborsa.api.domain.dto.strategy.CreateUserStrategyRequest;
+import com.pborsa.api.domain.dto.strategy.UpdateUserStrategyRequest;
+import com.pborsa.api.domain.dto.strategy.UserStrategyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Orchestrates strategy operations invoked by controllers.
+ * Delegates to BaseStrategyService and UserStrategyService for specific operations.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StrategyService {
 
-    private final UserCredentialsService credentialsService;
-    private final StrategyExecutionService strategyExecutionService;
-    private final StrategyRepository strategyRepository;
-    private final StrategyPersistenceService strategyPersistenceService;
-    private final StrategyMapper strategyMapper;
+    private final BaseStrategyService baseStrategyService;
+    private final UserStrategyService userStrategyService;
 
-    public StrategyExecutionStartResponse startStrategy(Long userId,
-                                                        Long strategyId,
-                                                        StrategyExecutionStartRequest request) {
-        ensureStrategyExists(strategyId);
-        credentialsService.getCredentials(userId);
+    // ==========================================
+    // Base Strategy Operations (Read-only catalog)
+    // ==========================================
 
-        String symbol = request.symbol().trim().toUpperCase();
-
-        ZonedDateTime nowUtc = ZonedDateTime.now(java.time.ZoneOffset.UTC);
-        Instant end = nowUtc.minusMinutes(15).toInstant();
-        Instant start = nowUtc.minusMonths(3).toInstant();
-
-        String executionId = UUID.randomUUID().toString();
-        StrategyExecutionContext context = StrategyExecutionContext.builder()
-                .executionId(executionId)
-                .userId(userId)
-                .strategyId(strategyId)
-                .symbol(symbol)
-                .start(start)
-                .end(end)
-                .build();
-
-        strategyExecutionService.startExecution(context);
-
-        log.info("StrategyService started execution {} for user {} strategy {} symbol {}",
-                executionId, userId, strategyId, symbol);
-
-        return StrategyExecutionStartResponse.builder()
-                .executionId(executionId)
-                .userId(userId)
-                .strategyId(strategyId)
-                .symbol(symbol)
-                .start(start)
-                .end(end)
-                .status("STARTED")
-                .build();
+    /**
+     * Gets all active base strategies from the catalog.
+     *
+     * @return List of active base strategy DTOs
+     */
+    public List<BaseStrategyDto> getAllBaseStrategies() {
+        return baseStrategyService.getAllActiveStrategies();
     }
 
-    private void ensureStrategyExists(Long strategyId) {
-        if (strategyId == null) {
-            throw new StrategyExecutionException(
-                    StrategyExecutionException.ErrorCode.INVALID_REQUEST,
-                    "Strategy ID is required");
-        }
-        if (!strategyRepository.existsById(strategyId)) {
-            throw new StrategyExecutionException(
-                    StrategyExecutionException.ErrorCode.INVALID_REQUEST,
-                    "Strategy not found: " + strategyId);
-        }
+    /**
+     * Gets a base strategy by code.
+     *
+     * @param code Strategy code (e.g., MOMENTUM_V1)
+     * @return Optional base strategy DTO
+     */
+    public Optional<BaseStrategyDto> getBaseStrategyByCode(String code) {
+        return baseStrategyService.getStrategyByCode(code);
     }
+
+    // ==========================================
+    // User Strategy Operations (CRUD)
+    // ==========================================
 
     /**
      * Gets all strategies for a user.
-     * Security: Validates userId is not null.
-     * Note: Currently strategies are global, so this returns all strategies.
-     * In the future, if strategies become user-specific, this should filter by userId.
      *
-     * @param userId User ID (validated but not used for filtering currently)
-     * @return List of strategy DTOs
+     * @param userId User ID
+     * @return List of user strategy DTOs
      */
-    public List<StrategyDto> getStrategiesByUserId(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID is required");
-        }
-
-        log.debug("Getting all strategies for user: {}", userId);
-        // Currently strategies are global, so we return all strategies
-        // In the future, if strategies become user-specific, filter by userId
-        return strategyMapper.toStrategyDtoList(strategyPersistenceService.findAllStrategies());
+    public List<UserStrategyDto> getStrategiesByUserId(Long userId) {
+        return userStrategyService.getUserStrategies(userId);
     }
 
     /**
-     * Gets a specific strategy by ID.
-     * Security: Validates userId is not null.
+     * Gets a specific user strategy by ID.
      *
-     * @param userId     User ID (validated but not used for filtering currently)
+     * @param userId     User ID
      * @param strategyId Strategy ID
-     * @return Optional strategy DTO
+     * @return Optional user strategy DTO
      */
-    public Optional<StrategyDto> getStrategyById(Long userId, Long strategyId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID is required");
-        }
-        if (strategyId == null) {
-            throw new IllegalArgumentException("Strategy ID is required");
-        }
+    public Optional<UserStrategyDto> getStrategyById(Long userId, Long strategyId) {
+        return userStrategyService.getUserStrategy(userId, strategyId);
+    }
 
-        log.debug("Getting strategy {} for user: {}", strategyId, userId);
-        return strategyPersistenceService.findStrategyById(strategyId)
-                .map(strategyMapper::toStrategyDto);
+    /**
+     * Creates a new user strategy subscription.
+     *
+     * @param userId  User ID
+     * @param request Create request
+     * @return Created user strategy DTO
+     */
+    public UserStrategyDto createUserStrategy(Long userId, CreateUserStrategyRequest request) {
+        return userStrategyService.createUserStrategy(userId, request);
+    }
+
+    /**
+     * Updates an existing user strategy.
+     *
+     * @param userId     User ID
+     * @param strategyId Strategy ID
+     * @param request    Update request
+     * @return Updated user strategy DTO
+     */
+    public Optional<UserStrategyDto> updateUserStrategy(Long userId, Long strategyId, UpdateUserStrategyRequest request) {
+        return userStrategyService.updateUserStrategy(userId, strategyId, request);
+    }
+
+    /**
+     * Deletes a user strategy subscription.
+     *
+     * @param userId     User ID
+     * @param strategyId Strategy ID
+     * @return true if deleted, false if not found
+     */
+    public boolean deleteUserStrategy(Long userId, Long strategyId) {
+        return userStrategyService.deleteUserStrategy(userId, strategyId);
+    }
+
+    // ==========================================
+    // Strategy Activation
+    // ==========================================
+
+    /**
+     * Activates a user strategy, starting data transfer to the trading engine.
+     * The strategy must be in CREATED status.
+     *
+     * @param userId     User ID
+     * @param strategyId Strategy ID
+     * @return Updated user strategy DTO (status: PREPARING)
+     */
+    public Optional<UserStrategyDto> activateStrategy(Long userId, Long strategyId) {
+        log.info("Activating strategy {} for user {}", strategyId, userId);
+        return userStrategyService.activateStrategy(userId, strategyId);
     }
 }
