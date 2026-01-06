@@ -10,6 +10,7 @@ import com.pborsa.api.domain.event.StrategyStatusChangedEvent;
 import com.pborsa.api.exception.StrategyExecutionException;
 import com.pborsa.api.repository.UserStrategyRepository;
 import com.pborsa.api.service.mapper.UserStrategyMapper;
+import com.pborsa.api.service.trading.AccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.pborsa.api.domain.entity.UserStrategyStatus.*;
+import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.INSUFFICIENT_FUNDS;
 import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.INVALID_REQUEST;
 
 /**
@@ -35,6 +37,7 @@ public class UserStrategyService {
     private final BaseStrategyService baseStrategyService;
     private final UserStrategyMapper userStrategyMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final AccountService accountService;
 
     /**
      * Gets all strategies for a user.
@@ -108,12 +111,15 @@ public class UserStrategyService {
             throw new IllegalArgumentException("You already have this strategy for symbol: " + symbol);
         }
 
+        validateBudgetSufficientBuyingPower(userId, request);
+
         // Create the user strategy
         UserStrategyEntity entity = new UserStrategyEntity()
                 .setUserId(userId)
                 .setBaseStrategy(baseStrategy)
                 .setName(request.name().trim())
                 .setSymbol(symbol)
+                .setBudget(request.budget())
                 .setStatus(UserStrategyStatus.CREATED);
 
         UserStrategyEntity saved = userStrategyRepository.save(entity);
@@ -121,6 +127,15 @@ public class UserStrategyService {
                 saved.getId(), userId, code, symbol);
 
         return userStrategyMapper.toUserStrategyDto(saved);
+    }
+
+    private void validateBudgetSufficientBuyingPower(Long userId, CreateUserStrategyRequest request) {
+        if(!accountService.hasSufficientBuyingPower(userId, request.budget())) {
+            throw new StrategyExecutionException(
+                    INSUFFICIENT_FUNDS,
+                    "Insufficient buying power to allocate budget of " + request.budget()
+            );
+        }
     }
 
     /**
@@ -265,6 +280,7 @@ public class UserStrategyService {
                 entity.getId(),
                 entity.getUserId(),
                 entity.getSymbol(),
+                entity.getBudget(),
                 oldStatus,
                 newStatus
         );
