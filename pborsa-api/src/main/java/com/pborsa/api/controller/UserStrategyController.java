@@ -6,6 +6,7 @@ import com.pborsa.api.config.openapi.model.UserStrategyListResponseDoc;
 import com.pborsa.api.config.openapi.model.UserStrategyResponseDoc;
 import com.pborsa.api.controller.response.ApiResponse;
 import com.pborsa.api.domain.dto.strategy.CreateUserStrategyRequest;
+import com.pborsa.api.domain.dto.strategy.StrategyPnLDto;
 import com.pborsa.api.domain.dto.strategy.UpdateUserStrategyRequest;
 import com.pborsa.api.domain.dto.strategy.UserStrategyDto;
 import com.pborsa.api.security.FirebaseUserPrincipal;
@@ -195,6 +196,34 @@ public class UserStrategyController {
         Long targetUserId = securityService.resolveTargetUserId(userId, principal);
         return strategyService.activateStrategy(targetUserId, strategyId)
                 .map(strategy -> ResponseEntity.ok(ApiResponse.success(strategy, "Strategy activation started")))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Strategy not found")));
+    }
+
+    /**
+     * Gets the profit/loss data for a user strategy.
+     * Includes realized P/L from closed positions and unrealized P/L from open positions.
+     *
+     * @param userId     User ID from path
+     * @param strategyId Strategy ID
+     * @param principal  Authenticated user principal
+     * @return Strategy P/L data
+     */
+    @GetMapping("/{strategyId}/pnl")
+    @Operation(summary = "Get strategy P/L", 
+            description = "Gets profit/loss data for a strategy including realized P/L (closed positions), " +
+                    "unrealized P/L (current market value vs cost basis), and position details.")
+    @ApiResponseDoc(code = "200", description = "P/L data retrieved successfully", implementation = ApiErrorResponseDoc.class)
+    @ApiResponseDoc(code = "401", description = "Unauthorized", implementation = ApiErrorResponseDoc.class)
+    @ApiResponseDoc(code = "403", description = "Access denied", implementation = ApiErrorResponseDoc.class)
+    @ApiResponseDoc(code = "404", description = "Strategy not found", implementation = ApiErrorResponseDoc.class)
+    public ResponseEntity<ApiResponse<StrategyPnLDto>> getStrategyPnL(
+            @Parameter(description = "User ID") @PathVariable Long userId,
+            @Parameter(description = "Strategy ID") @PathVariable Long strategyId,
+            @AuthenticationPrincipal FirebaseUserPrincipal principal) {
+        Long targetUserId = securityService.resolveTargetUserId(userId, principal);
+        return strategyService.getStrategyPnL(targetUserId, strategyId)
+                .map(pnl -> ResponseEntity.ok(ApiResponse.success(pnl)))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Strategy not found")));
     }
