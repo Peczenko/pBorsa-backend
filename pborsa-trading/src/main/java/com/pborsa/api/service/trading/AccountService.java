@@ -42,9 +42,9 @@ public class AccountService {
         return accountInfoCacheService.refreshAccountInfo(userId);
     }
 
-    public boolean hasSufficientBuyingPower(Long userId, double requiredAmount) {
+    public boolean hasSufficientBuyingPower(Long userId, BigDecimal requiredAmount) {
         AccountInfoDto accountInfo = accountInfoCacheService.getAccountInfo(userId);
-        return accountInfo.buyingPower().doubleValue() >= requiredAmount;
+        return accountInfo.buyingPower().compareTo(requiredAmount) >= 0;
     }
 
     public double getPortfolioValue(Long userId) {
