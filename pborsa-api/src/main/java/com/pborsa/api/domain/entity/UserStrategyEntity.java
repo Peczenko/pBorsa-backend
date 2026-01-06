@@ -20,6 +20,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -58,6 +59,9 @@ public class UserStrategyEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private UserStrategyStatus status = UserStrategyStatus.ACTIVE;
+
+    @Column(precision = 19, scale = 4)
+    private BigDecimal budget;
 
     @CreationTimestamp
     private Instant createdAt;

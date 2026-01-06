@@ -84,7 +84,8 @@ public class StrategyStatusEventListener {
         StrategyExecutionContext context = defaultExecutionContext(
                 event.userId(),
                 event.strategyId(),
-                event.symbol()
+                event.symbol(),
+                event.budget()
         );
 
         // Start the Temporal workflow

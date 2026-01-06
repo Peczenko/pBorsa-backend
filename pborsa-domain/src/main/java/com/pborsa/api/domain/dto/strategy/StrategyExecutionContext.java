@@ -2,6 +2,7 @@ package com.pborsa.api.domain.dto.strategy;
 
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -16,13 +17,15 @@ public record StrategyExecutionContext(
         Long userId,
         Long strategyId,
         String symbol,
+        BigDecimal budget,
         Instant start,
         Instant end
 ) {
     public static StrategyExecutionContext defaultExecutionContext(
             Long userId,
             Long strategyId,
-            String symbol
+            String symbol,
+            BigDecimal budget
     ) {
         ZonedDateTime nowUtc = ZonedDateTime.now(ZoneOffset.UTC);
         Instant end = nowUtc.minusMinutes(15).toInstant();
@@ -33,6 +36,7 @@ public record StrategyExecutionContext(
                 .userId(userId)
                 .strategyId(strategyId)
                 .symbol(symbol)
+                .budget(budget)
                 .start(start)
                 .end(end)
                 .build();

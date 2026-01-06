@@ -1,5 +1,6 @@
 package com.pborsa.api.domain.dto.strategy;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -11,6 +12,7 @@ public record UserStrategyDto(
         BaseStrategyDto baseStrategy,
         String symbol,
         String status,
+        BigDecimal budget,
         Instant createdAt,
         Instant updatedAt
 ) {
