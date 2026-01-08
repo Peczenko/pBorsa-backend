@@ -2,6 +2,7 @@ package com.pborsa.api.service.strategy;
 
 import com.pborsa.api.domain.dto.strategy.BaseStrategyDto;
 import com.pborsa.api.domain.dto.strategy.CreateUserStrategyRequest;
+import com.pborsa.api.domain.dto.strategy.StrategyPnLDto;
 import com.pborsa.api.domain.dto.strategy.UpdateUserStrategyRequest;
 import com.pborsa.api.domain.dto.strategy.UserStrategyDto;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class StrategyService {
 
     private final BaseStrategyService baseStrategyService;
     private final UserStrategyService userStrategyService;
+    private final StrategyPnLService pnLService;
 
     // ==========================================
     // Base Strategy Operations (Read-only catalog)
@@ -120,5 +122,21 @@ public class StrategyService {
     public Optional<UserStrategyDto> activateStrategy(Long userId, Long strategyId) {
         log.info("Activating strategy {} for user {}", strategyId, userId);
         return userStrategyService.activateStrategy(userId, strategyId);
+    }
+
+    // ==========================================
+    // Strategy P/L
+    // ==========================================
+
+    /**
+     * Gets the profit/loss for a user strategy.
+     *
+     * @param userId     User ID
+     * @param strategyId Strategy ID
+     * @return P/L data
+     */
+    public Optional<StrategyPnLDto> getStrategyPnL(Long userId, Long strategyId) {
+        log.debug("Getting P/L for strategy {} user {}", strategyId, userId);
+        return pnLService.calculatePnL(userId, strategyId);
     }
 }

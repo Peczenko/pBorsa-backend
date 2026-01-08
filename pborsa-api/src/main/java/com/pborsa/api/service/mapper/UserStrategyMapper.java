@@ -33,6 +33,7 @@ public class UserStrategyMapper {
                 baseStrategyMapper.toBaseStrategyDto(entity.getBaseStrategy()),
                 entity.getSymbol(),
                 entity.getStatus().name(),
+                entity.getBudget(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

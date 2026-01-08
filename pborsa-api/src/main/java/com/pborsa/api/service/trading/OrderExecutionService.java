@@ -37,6 +37,7 @@ public class OrderExecutionService {
     public OrderExecutionResult startExecution(OrderExecutionRequest executionRequest) {
         Long userId = executionRequest.userId();
         TradingApiOrderRequest request = executionRequest.order();
+        //TODO: redefine canTrade to improve performance
         if (!accountService.canTrade(userId)) {
             OrderEntity rejected = orderPersistenceService.createRejectedOrder(
                     userId,

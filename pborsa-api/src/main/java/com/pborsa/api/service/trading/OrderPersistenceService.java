@@ -86,6 +86,7 @@ public class OrderPersistenceService {
         entity.setClientOrderId(response.clientOrderId());
         entity.setStatus(response.status());
         entity.setFilledQuantity(response.filledQuantity());
+        entity.setFilledAvgPrice(response.filledAveragePrice());
         entity.setLimitPrice(response.limitPrice());
         entity.setStopPrice(response.stopPrice());
         entity.setTimeInForce(response.timeInForce());

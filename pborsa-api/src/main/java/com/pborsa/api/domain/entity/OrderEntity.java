@@ -62,6 +62,9 @@ public class OrderEntity {
     private BigDecimal filledQuantity;
     private BigDecimal limitPrice;
     private BigDecimal stopPrice;
+    
+    @Column(precision = 19, scale = 4)
+    private BigDecimal filledAvgPrice;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

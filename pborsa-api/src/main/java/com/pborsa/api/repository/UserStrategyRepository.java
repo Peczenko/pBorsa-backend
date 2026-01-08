@@ -3,9 +3,11 @@ package com.pborsa.api.repository;
 import com.pborsa.api.domain.entity.UserStrategyEntity;
 import com.pborsa.api.domain.entity.UserStrategyStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Repository for user strategy subscriptions.
@@ -54,6 +56,22 @@ public interface UserStrategyRepository extends JpaRepository<UserStrategyEntity
      * @return List of active user strategies
      */
     List<UserStrategyEntity> findByStatus(UserStrategyStatus status);
+
+    /**
+     * Finds all distinct symbols from active strategies.
+     *
+     * @return Set of unique symbols
+     */
+    @Query("SELECT DISTINCT us.symbol FROM UserStrategyEntity us WHERE us.status = 'ACTIVE'")
+    Set<String> findDistinctSymbolsByActiveStatus();
+
+    /**
+     * Finds any active user ID (for system-level operations like price fetching).
+     *
+     * @return Optional user ID
+     */
+    @Query("SELECT us.userId FROM UserStrategyEntity us WHERE us.status = 'ACTIVE' ORDER BY us.id LIMIT 1")
+    Optional<Long> findAnyActiveUserId();
 }
 
 

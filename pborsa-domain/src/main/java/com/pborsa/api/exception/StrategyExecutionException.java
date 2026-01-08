@@ -25,6 +25,7 @@ public class StrategyExecutionException extends RuntimeException {
         INVALID_REQUEST,
         TRADING_ENGINE_UNAVAILABLE,
         DATA_STREAM_ERROR,
-        CREDENTIALS_MISSING
+        CREDENTIALS_MISSING,
+        INSUFFICIENT_FUNDS
     }
 }
