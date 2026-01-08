@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,7 +75,7 @@ public class GlobalExceptionHandler {
                         .success(false)
                         .data(errors)
                         .error("Validation failed")
-                        .timestamp(java.time.Instant.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -126,6 +127,7 @@ public class GlobalExceptionHandler {
             case TRADING_ENGINE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
             case CREDENTIALS_MISSING -> HttpStatus.UNAUTHORIZED;
             case DATA_STREAM_ERROR -> HttpStatus.BAD_GATEWAY;
+            case INSUFFICIENT_FUNDS -> HttpStatus.FORBIDDEN;
         };
         return ResponseEntity
                 .status(status)
