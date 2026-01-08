@@ -34,52 +34,489 @@ Monorepo for the pBorsa trading backend (Spring Boot + Temporal + gRPC). The API
    ./gradlew :pborsa-trading-worker:bootRun
    ```
 
-## API docs (Swagger)
-After starting `pborsa-api`, open:
-- Swagger UI: http://localhost:8081/swagger-ui/index.html
-- OpenAPI JSON: http://localhost:8081/v3/api-docs
+## Initial Setup After Application Start
 
-Key endpoints (all documented in Swagger):
-- Accounts: `/api/v1/account/{userId}/...` (info, buying power, cash, equity, positions).
-- Credentials: `/api/v1/credentials/{userId}` (register/update keys, status, deactivate, refresh).
-- Strategies: `POST /api/v1/strategies/{userId}/{strategyId}/start` (start historical data streaming workflow).
+### 1. Obtain JWT Token for Authentication
 
-## Mock trading-engine (Python gRPC) for local testing
-- A lightweight mock server lives at `client.py` in the repo root.
-- It implements the `TradingEngineService.ExecuteStrategy` RPC and writes what it receives:
-  - Header -> `received_header.json`
-  - Bar batches -> append lines to `received_bars.jsonl`
+All API endpoints (except public ones) require a Firebase JWT token. To obtain a token, send a POST request:
 
-Run it (from repo root):
 ```bash
-python -m venv .venv
-. .venv/Scripts/activate  # or source .venv/bin/activate on *nix
-pip install grpcio grpcio-tools
+POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDeBIrmh2HvbrAxbq96KvVQ9OuSnvIE2SU
+Content-Type: application/json
 
-# generate Python stubs if missing (or after updating proto file)
-# Option 1: Use helper script (recommended)
-python generate_python_proto.py
-# Option 2: Manual command
-# python -m grpc_tools.protoc -I pborsa-trading/src/main/proto --python_out=. --grpc_python_out=. pborsa-trading/src/main/proto/trading_engine.proto
-
-# start mock server on 0.0.0.0:9090
-python client.py
+{
+    "email": "admin_user@gmail.com",
+    "password": "admin_password",
+    "returnSecureToken": true
+}
 ```
 
-Point the API to it (already default): `trading.engine.grpc.address=localhost:9090`.
-When you POST `/api/v1/strategies/{userId}/{strategyId}/start`, the mock will log batches and write the files above so you can inspect what was streamed.
+**Response** will include an `idToken` field – use this as the Bearer token for all subsequent requests:
+```
+Authorization: Bearer <idToken>
+```
+
+### 2. Set Up Alpaca Credentials for Admin User
+
+A default admin user with `id=0` is available. You **must** register Alpaca API credentials before using trading features:
+
+```bash
+POST http://localhost:8081/api/v1/credentials/0
+Authorization: Bearer <idToken>
+Content-Type: application/json
+
+{
+    "apiKey": "PKRC2DDEJG6B5GLSHXYV",
+    "secretKey": "AHHMyK1G8KSP5WPshXsv3vekEVAqmjK3X8HQG7pR6z",
+    "paperTrading": true
+}
+```
+
+> **Note**: Replace with your actual Alpaca paper trading API keys.
+
+---
 
 ## Configuration
-- API properties: `pborsa-api/src/main/resources/application.properties`
-  - `spring.temporal.connection.target` – Temporal address
-  - `trading.engine.grpc.address` – trading engine gRPC endpoint
-  - `alpaca.base-url` / `alpaca.market-data-url` – Alpaca endpoints
-- Strategy worker tuning:
-  - `temporal.workers.strategy.max-concurrent-activities`
-  - `temporal.workers.strategy.max-concurrent-workflows`
+
+### Application Properties
+
+All configuration is in `pborsa-api/src/main/resources/application.properties`.
+
+#### HTTP Port
+```properties
+server.port=8081
+```
+Change this to run the API on a different port.
+
+#### Database Configuration
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/pborsa
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+```
+
+#### gRPC Configuration (Trading Engine)
+```properties
+# Enable/disable gRPC client
+trading.engine.grpc.enabled=true
+
+# Trading engine gRPC address (host:port)
+trading.engine.grpc.address=localhost:9090
+
+# Batch size for streaming historical data
+trading.engine.grpc.batch-size=1000
+
+# Max records per page when fetching historical data
+trading.engine.grpc.page-limit=10000
+```
+
+**Example values:**
+| Property | Default | Description |
+|----------|---------|-------------|
+| `trading.engine.grpc.enabled` | `true` | Set to `false` to disable gRPC client |
+| `trading.engine.grpc.address` | `localhost:9090` | Trading engine gRPC endpoint |
+| `trading.engine.grpc.batch-size` | `1000` | Number of trades per batch when streaming |
+| `trading.engine.grpc.page-limit` | `10000` | Max historical data records per API call |
+
+#### Temporal Configuration
+```properties
+temporal.enabled=true
+spring.temporal.connection.target=localhost:7233
+spring.temporal.namespace=default
+```
+
+---
+
+## Infrastructure (Docker Compose)
+
+### Exposed Ports
+
+| Service | Host Port | Container Port | Description |
+|---------|-----------|----------------|-------------|
+| PostgreSQL (pBorsa) | `5432` | `5432` | Main application database |
+| PostgreSQL (Temporal) | `5433` | `5432` | Temporal's internal database |
+| Temporal Server | `7233` | `7233` | Temporal gRPC API |
+| Temporal UI | `8088` | `8080` | Temporal Web UI |
+
+### Database Connection
+- **Host**: `localhost`
+- **Port**: `5432`
+- **Database**: `pborsa`
+- **Username**: `postgres`
+- **Password**: `postgres`
+
+Connect via any PostgreSQL client:
+```bash
+psql -h localhost -p 5432 -U postgres -d pborsa
+```
+
+### Temporal UI
+After starting Docker Compose, access the Temporal UI at:
+- **URL**: http://localhost:8088
+
+In the Temporal UI you can monitor:
+- **Strategy Execution Workflows** – see historical data streaming progress
+- **Order Request Workflows** – track order placement and status updates
+- Workflow history, retries, and failures
+
+---
+
+## gRPC Architecture
+
+### Proto File Location
+```
+pborsa-trading/src/main/proto/trading_engine.proto
+```
+
+### Services Defined
+
+#### 1. TradingEngineService (pBorsa API → Trading Engine)
+The pBorsa API acts as a **gRPC client** calling the trading engine:
+
+| RPC Method | Direction | Description |
+|------------|-----------|-------------|
+| `ExecuteStrategy` | API → Engine | Stream historical trade data for strategy execution |
+| `NotifyOrderStatusUpdate` | API → Engine | Push order status changes to the trading engine |
+
+#### 2. TradingOrderService (Trading Engine → pBorsa API)
+The pBorsa API exposes a **gRPC server** on port `9092` for receiving order requests:
+
+| RPC Method | Direction | Description |
+|------------|-----------|-------------|
+| `PlaceOrder` | Engine → API | Submit order requests from trading engine |
+
+### Key gRPC Entities
+
+#### StrategyExecutionHeader
+Sent at the start of strategy execution stream:
+```protobuf
+message StrategyExecutionHeader {
+  string execution_id = 1;    // Unique execution UUID
+  int64 user_id = 2;          // User ID
+  int64 strategy_id = 3;      // User strategy ID
+  string symbol = 4;          // Trading symbol (e.g., "AAPL")
+  string timeframe = 5;       // Timeframe
+  Timestamp start = 6;        // Historical data start time
+  Timestamp end = 7;          // Historical data end time
+}
+```
+
+#### Trade / TradeBatch
+Historical trade data streamed to the trading engine:
+```protobuf
+message Trade {
+  Timestamp timestamp = 1;
+  double price = 2;
+  double size = 3;
+  string exchange = 4;
+  string trade_id = 5;
+  string tape = 6;
+  string conditions = 7;
+}
+
+message TradeBatch {
+  repeated Trade trades = 1;
+}
+```
+
+#### OrderRequest
+Order submitted by trading engine:
+```protobuf
+message OrderRequest {
+  int64 user_id = 1;
+  string symbol = 2;
+  double quantity = 3;
+  OrderSide side = 4;          // BUY, SELL
+  OrderType type = 5;          // MARKET, LIMIT, STOP, STOP_LIMIT
+  TimeInForce time_in_force = 6;
+  double limit_price = 7;
+  double stop_price = 8;
+  bool extended_hours = 9;
+  string client_order_id = 10;
+  int64 strategy_id = 11;
+}
+```
+
+#### OrderStatusUpdate
+Pushed to trading engine when order status changes:
+```protobuf
+message OrderStatusUpdate {
+  string order_id = 1;
+  string workflow_id = 2;
+  string client_order_id = 3;  // Used to route to correct trading engine
+  string alpaca_order_id = 4;
+  OrderStatus status = 5;
+  OrderStatusReason reason = 6;
+  string message = 7;
+  Timestamp updated_at = 8;
+  Timestamp created_at = 9;
+  string resume_token = 10;
+}
+```
+
+---
+
+## Strategies
+
+### Architecture: Base Strategies vs User Strategies
+
+The system uses a **two-tier strategy architecture**:
+
+#### Base Strategies (Templates)
+Read-only catalog entries that define available trading strategies. These are system-defined and cannot be modified by users.
+
+**Table**: `base_strategies`
+
+| Field | Description |
+|-------|-------------|
+| `id` | Primary key |
+| `code` | Unique identifier (e.g., `MOMENTUM_V1`) |
+| `name` | Display name |
+| `description` | Strategy description |
+| `active` | Whether strategy is available for subscription |
+
+#### User Strategies (Instances)
+When a user wants to use a strategy, they create a **user strategy** by:
+1. Selecting a base strategy
+2. Choosing a stock symbol (e.g., `AAPL`)
+3. Giving it a custom name
+4. Setting a budget
+
+**Table**: `user_strategies`
+
+| Field | Description |
+|-------|-------------|
+| `id` | Primary key (used as `strategyId` in APIs) |
+| `user_id` | Owner user ID |
+| `base_strategy_id` | Reference to base strategy template |
+| `name` | User's custom name for this strategy instance |
+| `symbol` | Trading symbol (e.g., `AAPL`, `MSFT`) |
+| `status` | Current status (`CREATED`, `PREPARING`, `ACTIVE`, `PAUSED`, `STOPPED`) |
+| `budget` | Allocated budget for this strategy |
+
+**Constraint**: A user can only have one instance of each base strategy per symbol (unique on `user_id` + `base_strategy_id` + `symbol`).
+
+### Default Base Strategies
+
+The system comes with 3 pre-configured base strategies:
+
+| ID | Code | Name | Description |
+|----|------|------|-------------|
+| 1 | `MOMENTUM_V1` | Momentum V1 | Example momentum strategy |
+| 2 | `MEAN_REVERSION_V1` | Mean Reversion V1 | Example mean reversion strategy |
+| 3 | `BREAKOUT_V1` | Breakout V1 | Example breakout strategy |
+
+### Example: Creating a User Strategy
+
+```bash
+POST http://localhost:8081/api/v1/strategies/{userId}/user-strategies
+Authorization: Bearer <idToken>
+Content-Type: application/json
+
+{
+    "baseStrategyId": 1,
+    "name": "My AAPL Momentum Strategy",
+    "symbol": "AAPL",
+    "budget": 5000.00
+}
+```
+
+This creates a user strategy that:
+- Uses the **Momentum V1** base strategy
+- Trades **AAPL** stock
+- Has a **$5,000** budget
+- Starts in `CREATED` status
+
+---
+
+## Strategy Lifecycle
+
+### Status Transitions
+User strategies follow a defined state machine:
+
+```
+CREATED → PREPARING → ACTIVE ⇄ PAUSED
+                ↓         ↓
+              STOPPED ← STOPPED
+```
+
+| From | Allowed Transitions |
+|------|---------------------|
+| `CREATED` | `PREPARING` |
+| `PREPARING` | `ACTIVE`, `STOPPED` |
+| `ACTIVE` | `PAUSED`, `STOPPED` |
+| `PAUSED` | `ACTIVE`, `STOPPED` |
+| `STOPPED` | (terminal state) |
+
+### Strategy Execution Flow
+
+When a strategy is activated (`CREATED` → `PREPARING`):
+
+1. **Status Change**: Strategy status set to `PREPARING`
+2. **Temporal Workflow Started**: `StrategyExecutionWorkflow` begins
+3. **Data Sent to Trading Engine** via gRPC `ExecuteStrategy`:
+   - **Header**: `StrategyExecutionHeader` with execution context
+   - **Historical Trades**: `TradeBatch` chunks (last 3 months of trade data)
+4. **Workflow Completes**: Strategy status set to `ACTIVE`
+
+#### Data Shared with Trading Engine
+When strategy execution starts, the following is streamed:
+```java
+StrategyExecutionContext {
+    executionId,    // UUID for this execution
+    userId,         // User ID
+    strategyId,     // User strategy ID
+    symbol,         // Trading symbol (e.g., "AAPL")
+    budget,         // User's budget for this strategy
+    start,          // Historical data start (default: 3 months ago)
+    end             // Historical data end (default: now - 15 min)
+}
+```
+
+> **⚠️ Note**: There is **no real-time streaming** to the trading engine currently. Only historical trade data is sent during strategy activation.
+
+---
+
+## API Documentation (Swagger)
+
+After starting `pborsa-api`, open:
+- **Swagger UI**: http://localhost:8081/swagger-ui/index.html
+- **OpenAPI JSON**: http://localhost:8081/v3/api-docs
+
+Key endpoints (all documented in Swagger):
+- **Accounts**: `/api/v1/account/{userId}/...` (info, buying power, cash, equity, positions)
+- **Credentials**: `/api/v1/credentials/{userId}` (register/update keys, status, deactivate, refresh)
+- **Strategies**: `/api/v1/strategies/{userId}/user-strategies` (manage user strategies)
+- **Admin**: `/api/v1/admin/...` (admin-only endpoints)
+
+---
+
+## Python Testing Tools
+
+### Setup
+```bash
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# or: source .venv/bin/activate  # Linux/Mac
+
+pip install grpcio grpcio-tools
+```
+
+### Generate Python Proto Stubs
+After modifying the proto file, regenerate Python code:
+```bash
+python generate_python_proto.py
+```
+This generates:
+- `trading_engine_pb2.py` – Message classes
+- `trading_engine_pb2_grpc.py` – Service stubs
+
+### Python Files
+
+| File | Purpose | How to Run |
+|------|---------|------------|
+| `generate_python_proto.py` | Regenerates Python gRPC stubs from proto file | `python generate_python_proto.py` |
+| `client.py` | **Mock trading engine server** – receives strategy execution streams and saves data to files | `python client.py` |
+| `trading_engine_order_status_server.py` | Mock server that receives order status updates from pBorsa API | `python trading_engine_order_status_server.py --port 9090` |
+| `grpc_order_load_test.py` | Load test for `TradingOrderService.PlaceOrder` RPC | `python grpc_order_load_test.py --target localhost:9092 --count 100` |
+| `trading_engine_pb2.py` | Auto-generated protobuf message classes | (imported by other scripts) |
+| `trading_engine_pb2_grpc.py` | Auto-generated gRPC service stubs | (imported by other scripts) |
+
+### Testing Strategy Execution
+
+1. Start the mock trading engine:
+   ```bash
+   python client.py
+   ```
+   This listens on `0.0.0.0:9090` and saves received data to:
+   - `received_header.json` – Strategy execution header
+   - `received_trades_test.jsonl` – Trade data (JSON lines format)
+
+2. Start pBorsa API and activate a strategy via REST API
+
+3. Check the output files to verify data was streamed correctly
+
+### Testing Order Status Updates
+
+1. Start the order status server:
+   ```bash
+   python trading_engine_order_status_server.py --port 9090
+   ```
+
+2. When orders are placed and their status changes, the server logs updates
+
+### Load Testing Orders
+
+```bash
+python grpc_order_load_test.py \
+    --target localhost:9092 \
+    --count 150 \
+    --workers 50 \
+    --duration 10 \
+    --user-id 1 \
+    --strategy-id 2 \
+    --symbols AAPL,MSFT,NVDA
+```
+
+---
+
+## Order Reconciliation
+
+The API includes a background scheduler that periodically reconciles local order statuses with Alpaca's actual order statuses. This catches any status updates that may have been missed due to network issues, restarts, or timing gaps.
+
+### How It Works
+
+1. **Scheduler** (`OrderReconciliationScheduler`) runs at a configurable interval
+2. **Query** finds all orders that:
+   - Have `updatedAt` older than `exclude-recent-minutes` (default: 1 min)
+   - Are **not** in terminal status (`FILLED`, `CANCELED`, `EXPIRED`, `REJECTED`)
+3. **For each user's orders**, the processor:
+   - Fetches open orders from Alpaca
+   - Fetches recently closed orders from Alpaca (last 500)
+   - Compares local status with remote status
+   - If status differs → updates local database
+   - If status unchanged but should be closed → cancels stale order on Alpaca
+
+### Configuration
+
+```properties
+# Reconciliation interval in milliseconds (default: 900000 = 15 minutes)
+orders.reconcile.interval-ms=900000
+
+# Exclude orders updated within this many minutes (default: 1)
+orders.reconcile.exclude-recent-minutes=1
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `orders.reconcile.interval-ms` | `900000` (15 min) | How often reconciliation runs |
+| `orders.reconcile.exclude-recent-minutes` | `1` | Skip orders updated within X minutes (avoids racing with real-time updates) |
+
+### Disabling Reconciliation
+
+To effectively disable order reconciliation, set a very large interval:
+
+```properties
+# Disable reconciliation (run once per ~24 days)
+orders.reconcile.interval-ms=2147483647
+```
+
+Or set to a very long interval like 24 hours:
+```properties
+# Run reconciliation once per day
+orders.reconcile.interval-ms=86400000
+```
+
+---
 
 ## Notes
-- Temporal task queues:
+
+- **Temporal Task Queues**:
   - Strategy/data streaming: `STRATEGY_EXECUTION_TASK_QUEUE` (hosted by API)
   - Trading/market-data: `TRADING_TASK_QUEUE`, `MARKET_DATA_TASK_QUEUE` (hosted by trading-worker)
-- Swagger annotations live on controllers for Accounts, Credentials, and Strategies to help frontend integration.
+
+- **gRPC Ports Summary**:
+  - `9090` – Trading engine (external, configurable via `trading.engine.grpc.address`)
+  - `9092` – pBorsa API's TradingOrderService (receives order requests from trading engine)
+
+- Swagger annotations live on controllers for Accounts, Credentials, Strategies, and Admin endpoints
