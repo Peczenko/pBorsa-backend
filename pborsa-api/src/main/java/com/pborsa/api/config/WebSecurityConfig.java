@@ -29,7 +29,7 @@ public class WebSecurityConfig {
         FirebaseAuthenticationFilter firebaseFilter = new FirebaseAuthenticationFilter(firebaseAuth);
 
         http
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
