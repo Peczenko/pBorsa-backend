@@ -36,6 +36,61 @@ Monorepo for the pBorsa trading backend (Spring Boot + Temporal + gRPC). The API
 
 ## Initial Setup After Application Start
 
+### 0. Configure Firebase Credentials
+
+The application requires Firebase Admin SDK credentials for authentication. You will receive a `firebase-service-account.json` file.
+
+**Option A: Set via Environment Variable (Recommended)**
+```bash
+# Windows (PowerShell)
+$env:FIREBASE_CREDENTIALS_PATH = "C:\path\to\firebase-service-account.json"
+
+# Windows (CMD)
+set FIREBASE_CREDENTIALS_PATH=C:\path\to\firebase-service-account.json
+
+# Linux/Mac
+export FIREBASE_CREDENTIALS_PATH=/path/to/firebase-service-account.json
+```
+
+**Option B: Set directly in application.properties**
+```properties
+firebase.credentials.path=C:/path/to/firebase-service-account.json
+```
+
+**Option C: Use Base64-encoded credentials (for containerized environments)**
+```bash
+# Encode the file
+base64 -w 0 firebase-service-account.json > firebase-creds-base64.txt
+
+# Set environment variable
+export FIREBASE_CREDENTIALS_BASE64=$(cat firebase-creds-base64.txt)
+```
+
+Or in `application.properties`:
+```properties
+firebase.credentials.base64=eyJ0eXBlIjoic2VydmljZV9hY2NvdW50Iiw...
+```
+
+#### Firebase Configuration Properties
+
+```properties
+# Enable/disable Firebase authentication
+firebase.enabled=true
+
+# Path to service account JSON file
+firebase.credentials.path=${FIREBASE_CREDENTIALS_PATH:}
+
+# Alternative: Base64-encoded service account JSON
+firebase.credentials.base64=${FIREBASE_CREDENTIALS_BASE64:}
+
+# Firebase project ID (optional, auto-detected from credentials)
+firebase.project-id=${FIREBASE_PROJECT_ID:}
+```
+
+> **Note**: Either `firebase.credentials.path` OR `firebase.credentials.base64` must be set. Path takes precedence if both are provided.
+
+---
+
 ### 1. Obtain JWT Token for Authentication
 
 All API endpoints (except public ones) require a Firebase JWT token. To obtain a token, send a POST request:
