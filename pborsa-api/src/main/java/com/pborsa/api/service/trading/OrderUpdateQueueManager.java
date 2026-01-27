@@ -1,5 +1,7 @@
 package com.pborsa.api.service.trading;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,9 +21,6 @@ public class OrderUpdateQueueManager {
     private final ConcurrentHashMap<String, ExecutorService> orderQueues = new ConcurrentHashMap<>();
     private final AtomicInteger queueCounter = new AtomicInteger(0);
 
-    @Value("${alpaca.trade-updates.queue-thread-pool-size:5}")
-    private int queueThreadPoolSize;
-
     @Value("${alpaca.trade-updates.queue-cleanup-interval-seconds:300}")
     private long queueCleanupIntervalSeconds;
 
@@ -33,6 +32,10 @@ public class OrderUpdateQueueManager {
             t.setDaemon(true);
             return t;
         });
+    }
+
+    @PostConstruct
+    private void init() {
         startCleanupTask();
     }
 
@@ -129,6 +132,7 @@ public class OrderUpdateQueueManager {
     /**
      * Shuts down all order queues gracefully.
      */
+    @PreDestroy
     public void shutdown() {
         log.info("Shutting down order update queue manager");
         cleanupScheduler.shutdown();
