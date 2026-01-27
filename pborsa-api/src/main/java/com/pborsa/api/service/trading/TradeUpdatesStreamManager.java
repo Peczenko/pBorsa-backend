@@ -9,7 +9,6 @@ import net.jacobpeterson.alpaca.AlpacaAPI;
 import net.jacobpeterson.alpaca.model.websocket.updates.model.tradeupdate.TradeUpdate;
 import net.jacobpeterson.alpaca.model.websocket.updates.model.tradeupdate.TradeUpdateMessage;
 import net.jacobpeterson.alpaca.websocket.updates.UpdatesWebsocketInterface;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,7 +29,7 @@ public class TradeUpdatesStreamManager {
     private final UserCredentialsService credentialsService;
     private final OrderQueryService orderQueryService;
     private final TradeUpdatesProcessor tradeUpdatesProcessor;
-    private final Executor tradingExecutor;
+    private final OrderUpdateQueueManager orderUpdateQueueManager;
 
     @Value("${alpaca.trade-updates.idle-timeout-ms:300000}")
     private long idleTimeoutMs;
@@ -45,12 +43,12 @@ public class TradeUpdatesStreamManager {
                                      UserCredentialsService credentialsService,
                                      OrderQueryService orderQueryService,
                                      TradeUpdatesProcessor tradeUpdatesProcessor,
-                                     @Qualifier("tradingExecutor") Executor tradingExecutor) {
+                                     OrderUpdateQueueManager orderUpdateQueueManager) {
         this.clientFactory = clientFactory;
         this.credentialsService = credentialsService;
         this.orderQueryService = orderQueryService;
         this.tradeUpdatesProcessor = tradeUpdatesProcessor;
-        this.tradingExecutor = tradingExecutor;
+        this.orderUpdateQueueManager = orderUpdateQueueManager;
     }
 
     public void ensureStream(Long userId) {
@@ -155,7 +153,33 @@ public class TradeUpdatesStreamManager {
             return;
         }
         TradeUpdate update = message.getData();
-        tradingExecutor.execute(() -> tradeUpdatesProcessor.processUpdate(userId, update));
+        
+        // Extract order key for queue routing
+        String orderKey = extractOrderKey(update);
+        
+        // Submit to order-specific queue to ensure sequential processing
+        orderUpdateQueueManager.submitUpdate(orderKey, () -> {
+            tradeUpdatesProcessor.processUpdate(userId, update);
+        });
+    }
+
+    /**
+     * Extracts order identifier from trade update for queue routing.
+     * Prefers alpacaOrderId, falls back to clientOrderId.
+     */
+    private String extractOrderKey(TradeUpdate update) {
+        if (update == null || update.getOrder() == null) {
+            return null;
+        }
+        var order = update.getOrder();
+        // Prefer alpacaOrderId as it's more stable
+        if (order.getId() != null && !order.getId().isBlank()) {
+            return "alpaca:" + order.getId();
+        }
+        if (order.getClientOrderId() != null && !order.getClientOrderId().isBlank()) {
+            return "client:" + order.getClientOrderId();
+        }
+        return null;
     }
 
     private static final class StreamState {
