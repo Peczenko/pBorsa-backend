@@ -153,14 +153,45 @@ public class OrderPersistenceService {
         if (order.getClientOrderId() == null && clientOrderId != null) {
             order.setClientOrderId(clientOrderId);
         }
-        if (order.getStatus() == status && message == null) {
+        
+        OrderStatus currentStatus = order.getStatus();
+        
+        // Skip if status hasn't changed and no message to add
+        if (currentStatus == status && message == null) {
             return true;
         }
+        
+        // Validate status transition - prevent updating to a "less advanced" status
+        // if we've already reached a final status
+        if (isFinalStatus(currentStatus) && !isFinalStatus(status)) {
+            log.warn("Ignoring status update from final status {} to non-final {} for order {} (alpacaOrderId={}, clientOrderId={})",
+                    currentStatus, status, order.getId(), alpacaOrderId, clientOrderId);
+            // Still create history entry for audit purposes, but don't change status
+            if (message != null) {
+                createOrderHistory(order.getUserId(), order, status, message + " [IGNORED: order already in final status]", reason);
+            }
+            return false;
+        }
+        
+        // Allow same status updates (e.g., multiple PARTIAL_FILL updates)
+        // Allow transitions to final statuses from any non-final status
+        // Allow transitions between non-final statuses
+        
         order.setStatus(status);
         OrderEntity saved = orderRepository.save(order);
         // createOrderHistory will publish the event
         createOrderHistory(order.getUserId(), saved, status, message, reason);
         return true;
+    }
+
+    private boolean isFinalStatus(OrderStatus status) {
+        if (status == null) {
+            return false;
+        }
+        return switch (status) {
+            case FILLED, CANCELED, EXPIRED, REJECTED, DONE_FOR_DAY -> true;
+            default -> false;
+        };
     }
 
     /**
