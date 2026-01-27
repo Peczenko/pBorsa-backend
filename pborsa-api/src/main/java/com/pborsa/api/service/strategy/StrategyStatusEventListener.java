@@ -1,5 +1,6 @@
 package com.pborsa.api.service.strategy;
 
+import com.pborsa.api.config.strategy.StrategyExecutionProperties;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import com.pborsa.api.domain.entity.UserStrategyStatus;
 import com.pborsa.api.domain.event.StrategyStatusChangedEvent;
@@ -10,13 +11,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.UUID;
-
-import static com.pborsa.api.domain.dto.strategy.StrategyExecutionContext.defaultExecutionContext;
 
 /**
  * Listens for strategy status changes and triggers appropriate side effects.
@@ -30,6 +24,7 @@ public class StrategyStatusEventListener {
 
     private final StrategyExecutionService strategyExecutionService;
     private final UserCredentialsService credentialsService;
+    private final StrategyExecutionProperties executionProperties;
 
     /**
      * Handles strategy status change events after transaction commit.
@@ -81,11 +76,13 @@ public class StrategyStatusEventListener {
             return;
         }
 
-        StrategyExecutionContext context = defaultExecutionContext(
+        StrategyExecutionContext context = StrategyExecutionContext.create(
                 event.userId(),
                 event.strategyId(),
                 event.symbol(),
-                event.budget()
+                event.budget(),
+                executionProperties.getLookbackPeriod(),
+                executionProperties.getEndOffset()
         );
 
         // Start the Temporal workflow

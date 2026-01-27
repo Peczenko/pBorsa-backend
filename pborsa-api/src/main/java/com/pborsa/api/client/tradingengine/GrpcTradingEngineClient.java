@@ -2,10 +2,10 @@ package com.pborsa.api.client.tradingengine;
 
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.Timestamps;
-import com.pborsa.api.domain.dto.market.StockTradeDto;
+import com.pborsa.api.domain.dto.market.StockQuoteDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
-import com.pborsa.api.tradingengine.v1.Trade;
-import com.pborsa.api.tradingengine.v1.TradeBatch;
+import com.pborsa.api.tradingengine.v1.Quote;
+import com.pborsa.api.tradingengine.v1.QuoteBatch;
 import com.pborsa.api.tradingengine.v1.ExecutionAck;
 import com.pborsa.api.tradingengine.v1.StrategyExecutionChunk;
 import com.pborsa.api.tradingengine.v1.StrategyExecutionHeader;
@@ -81,17 +81,17 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
 
         return new TradingEngineStream() {
             @Override
-            public void sendTrades(List<StockTradeDto> trades) {
+            public void sendQuotes(List<StockQuoteDto> quotes) {
                 ensureHealthy();
-                if (trades == null || trades.isEmpty()) {
+                if (quotes == null || quotes.isEmpty()) {
                     return;
                 }
-                TradeBatch.Builder batchBuilder = TradeBatch.newBuilder();
-                for (StockTradeDto trade : trades) {
-                    batchBuilder.addTrades(toProtoTrade(trade));
+                QuoteBatch.Builder batchBuilder = QuoteBatch.newBuilder();
+                for (StockQuoteDto quote : quotes) {
+                    batchBuilder.addQuotes(toProtoQuote(quote));
                 }
                 requestObserver.onNext(StrategyExecutionChunk.newBuilder()
-                        .setTradeBatch(batchBuilder.build())
+                        .setQuoteBatch(batchBuilder.build())
                         .build());
             }
 
@@ -127,26 +127,32 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
                 .build();
     }
 
-    private Trade toProtoTrade(StockTradeDto trade) {
-        Trade.Builder builder = Trade.newBuilder()
-                .setTimestamp(toTimestamp(trade.timestamp()));
-        if (trade.price() != null) {
-            builder.setPrice(trade.price().doubleValue());
+    private Quote toProtoQuote(StockQuoteDto quote) {
+        Quote.Builder builder = Quote.newBuilder()
+                .setTimestamp(toTimestamp(quote.timestamp()));
+        if (quote.bidPrice() != null) {
+            builder.setBidPrice(quote.bidPrice().doubleValue());
         }
-        if (trade.size() != null) {
-            builder.setSize(trade.size().doubleValue());
+        if (quote.bidSize() != null) {
+            builder.setBidSize(quote.bidSize().doubleValue());
         }
-        if (trade.exchange() != null) {
-            builder.setExchange(trade.exchange());
+        if (quote.askPrice() != null) {
+            builder.setAskPrice(quote.askPrice().doubleValue());
         }
-        if (trade.tradeId() != null) {
-            builder.setTradeId(trade.tradeId());
+        if (quote.askSize() != null) {
+            builder.setAskSize(quote.askSize().doubleValue());
         }
-        if (trade.tape() != null) {
-            builder.setTape(trade.tape());
+        if (quote.bidExchange() != null) {
+            builder.setBidExchange(quote.bidExchange());
         }
-        if (trade.conditions() != null) {
-            builder.setConditions(trade.conditions());
+        if (quote.askExchange() != null) {
+            builder.setAskExchange(quote.askExchange());
+        }
+        if (quote.tape() != null) {
+            builder.setTape(quote.tape());
+        }
+        if (quote.conditions() != null) {
+            builder.setConditions(quote.conditions());
         }
         return builder.build();
     }

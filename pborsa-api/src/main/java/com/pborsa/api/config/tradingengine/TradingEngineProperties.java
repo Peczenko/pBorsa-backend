@@ -14,6 +14,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TradingEngineProperties {
     private boolean enabled = false;
     private String address = "localhost:9090";
-    private int batchSize = 1000;
-    private int pageLimit = 10000;
 }

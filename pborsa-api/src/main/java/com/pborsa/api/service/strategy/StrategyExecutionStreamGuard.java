@@ -1,7 +1,7 @@
 package com.pborsa.api.service.strategy;
 
 import com.pborsa.api.client.tradingengine.TradingEngineClient;
-import com.pborsa.api.domain.dto.market.StockTradeDto;
+import com.pborsa.api.domain.dto.market.StockQuoteDto;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,8 +21,8 @@ final class StrategyExecutionStreamGuard {
         stream.ensureHealthy();
     }
 
-    void sendTrades(List<StockTradeDto> trades) {
+    void sendQuotes(List<StockQuoteDto> quotes) {
         checkpoint();
-        stream.sendTrades(trades);
+        stream.sendQuotes(quotes);
     }
 }

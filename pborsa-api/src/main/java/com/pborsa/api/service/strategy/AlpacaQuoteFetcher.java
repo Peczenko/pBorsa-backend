@@ -3,10 +3,10 @@ package com.pborsa.api.service.strategy;
 import lombok.extern.slf4j.Slf4j;
 import net.jacobpeterson.alpaca.AlpacaAPI;
 import net.jacobpeterson.alpaca.openapi.marketdata.ApiException;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.StockFeed;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.StockTrade;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.StockTradesResp;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.Sort;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockFeed;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockQuote;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockQuotesResp;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -18,19 +18,20 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class AlpacaTradeFetcher {
+public class AlpacaQuoteFetcher {
 
     private static final int RATE_LIMIT_STATUS_CODE = 429;
     private static final long BASE_BACKOFF_MILLIS = 1000L;
     private static final long MAX_BACKOFF_MILLIS = 60_000L;
 
-    public TradePage fetchPage(AlpacaAPI client,
+    public QuotePage fetchPage(AlpacaAPI client,
                                String executionId,
                                String symbol,
                                Instant start,
                                Instant end,
                                int pageLimit,
                                String pageToken,
+                               StockFeed stockFeed,
                                Runnable checkpoint) throws ApiException {
         Runnable checkpointRunner = checkpoint != null ? checkpoint : () -> {};
         int rateLimitAttempts = 0;
@@ -38,19 +39,19 @@ public class AlpacaTradeFetcher {
         while (true) {
             checkpointRunner.run();
             try {
-                StockTradesResp resp = client.marketData().stock().stockTrades(
+                StockQuotesResp resp = client.marketData().stock().stockQuotes(
                         symbol,
                         OffsetDateTime.ofInstant(start, ZoneOffset.UTC),
                         OffsetDateTime.ofInstant(end, ZoneOffset.UTC),
                         (long) pageLimit,
                         null,
-                        StockFeed.IEX,
+                        stockFeed,
                         null,
                         pageToken,
                         Sort.ASC
                 );
                 rateLimitAttempts = 0;
-                return new TradePage(extractTrades(resp, symbol), resp.getNextPageToken());
+                return new QuotePage(extractQuotes(resp, symbol), resp.getNextPageToken());
             } catch (ApiException e) {
                 if (e.getCode() == RATE_LIMIT_STATUS_CODE) {
                     rateLimitAttempts++;
@@ -65,12 +66,12 @@ public class AlpacaTradeFetcher {
         }
     }
 
-    private List<StockTrade> extractTrades(StockTradesResp resp, String symbol) {
+    private List<StockQuote> extractQuotes(StockQuotesResp resp, String symbol) {
         if (resp == null) {
             return Collections.emptyList();
         }
-        Map<String, List<StockTrade>> tradesMap = resp.getTrades();
-        return tradesMap.getOrDefault(symbol, Collections.emptyList());
+        Map<String, List<StockQuote>> quotesMap = resp.getQuotes();
+        return quotesMap.getOrDefault(symbol, Collections.emptyList());
     }
 
     private long resolveRateLimitBackoffMillis(ApiException exception, int attempt) {
@@ -116,5 +117,4 @@ public class AlpacaTradeFetcher {
             remaining -= sleepMillis;
         }
     }
-
 }

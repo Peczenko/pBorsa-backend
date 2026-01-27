@@ -33,6 +33,12 @@ public class MarketDataMapper {
                 .bidPrice(quote.getBp() != null ? BigDecimal.valueOf(quote.getBp()) : null)
                 .bidSize(quote.getBs() != null ? new BigDecimal(quote.getBs()) : null)
                 .timestamp(quote.getT() != null ? quote.getT().toInstant() : null)
+                .bidExchange(quote.getBx())
+                .askExchange(quote.getAx())
+                .tape(quote.getZ() != null ? quote.getZ().getValue() : null)
+                .conditions(quote.getC() != null && !quote.getC().isEmpty()
+                        ? String.join(",", quote.getC())
+                        : null)
                 .build();
     }
 

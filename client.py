@@ -10,12 +10,12 @@ import trading_engine_pb2_grpc as pb2_grpc
 logging.basicConfig(level=logging.INFO)
 
 HEADER_PATH = "received_header.json"
-TRADES_PATH = "received_trades_test.jsonl"
+QUOTES_PATH = "received_quotes.jsonl"
 
 class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
     def ExecuteStrategy(self, request_iterator, context):
         header = None
-        total_trades = 0
+        total_quotes = 0
 
         for chunk in request_iterator:
             if chunk.HasField("header"):
@@ -33,25 +33,27 @@ class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
                     json.dump(header_obj, hf, indent=2)
                 logging.info("Header saved to %s", HEADER_PATH)
 
-            elif chunk.HasField("trade_batch"):
-                trades = chunk.trade_batch.trades
-                total_trades += len(trades)
-                logging.info("Received batch of %d trades (total=%d)", len(trades), total_trades)
-                with open(TRADES_PATH, "a", encoding="utf-8") as tf:
-                    for trade in trades:
-                        tf.write(json.dumps({
+            elif chunk.HasField("quote_batch"):
+                quotes = chunk.quote_batch.quotes
+                total_quotes += len(quotes)
+                logging.info("Received batch of %d quotes (total=%d)", len(quotes), total_quotes)
+                with open(QUOTES_PATH, "a", encoding="utf-8") as qf:
+                    for quote in quotes:
+                        qf.write(json.dumps({
                             "executionId": header.execution_id if header else "",
                             "symbol": header.symbol if header else "",
-                            "timestamp": trade.timestamp.ToDatetime().isoformat(),
-                            "price": trade.price,
-                            "size": trade.size,
-                            "exchange": trade.exchange,
-                            "tradeId": trade.trade_id,
-                            "tape": trade.tape,
-                            "conditions": trade.conditions,
+                            "timestamp": quote.timestamp.ToDatetime().isoformat(),
+                            "bidPrice": quote.bid_price,
+                            "bidSize": quote.bid_size,
+                            "askPrice": quote.ask_price,
+                            "askSize": quote.ask_size,
+                            "bidExchange": quote.bid_exchange,
+                            "askExchange": quote.ask_exchange,
+                            "tape": quote.tape,
+                            "conditions": quote.conditions,
                         }) + "\n")
 
-        msg = f"Received {total_trades} trades" + (f" for {header.execution_id}" if header else "")
+        msg = f"Received {total_quotes} quotes" + (f" for {header.execution_id}" if header else "")
         return pb2.ExecutionAck(accepted=True, message=msg, execution_id=header.execution_id if header else "")
 
 def serve():

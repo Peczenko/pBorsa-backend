@@ -3,6 +3,7 @@ package com.pborsa.api.domain.dto.market;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 
 /**
@@ -16,8 +17,10 @@ public record StockQuoteDto(
         BigDecimal askPrice,
         BigDecimal askSize,
         Instant timestamp,
-        String exchange,
-        String tape
+        String bidExchange,
+        String askExchange,
+        String tape,
+        String conditions
 ) {
     /**
      * Calculates the bid-ask spread.
@@ -36,7 +39,7 @@ public record StockQuoteDto(
         if (askPrice == null || bidPrice == null) {
             return BigDecimal.ZERO;
         }
-        return askPrice.add(bidPrice).divide(BigDecimal.valueOf(2), BigDecimal.ROUND_HALF_UP);
+        return askPrice.add(bidPrice).divide(BigDecimal.valueOf(2), RoundingMode.HALF_UP);
     }
 }
 

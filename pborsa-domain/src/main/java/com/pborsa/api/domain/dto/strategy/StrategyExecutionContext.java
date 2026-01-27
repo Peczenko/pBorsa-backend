@@ -3,7 +3,9 @@ package com.pborsa.api.domain.dto.strategy;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -21,15 +23,28 @@ public record StrategyExecutionContext(
         Instant start,
         Instant end
 ) {
-    public static StrategyExecutionContext defaultExecutionContext(
+    /**
+     * Creates execution context with configurable lookback and end offset.
+     *
+     * @param userId         user ID
+     * @param strategyId     strategy ID
+     * @param symbol         stock symbol
+     * @param budget         strategy budget
+     * @param lookbackPeriod lookback period for historical data
+     * @param endOffset      offset from current time for end timestamp
+     * @return configured execution context
+     */
+    public static StrategyExecutionContext create(
             Long userId,
             Long strategyId,
             String symbol,
-            BigDecimal budget
+            BigDecimal budget,
+            Period lookbackPeriod,
+            Duration endOffset
     ) {
         ZonedDateTime nowUtc = ZonedDateTime.now(ZoneOffset.UTC);
-        Instant end = nowUtc.minusMinutes(15).toInstant();
-        Instant start = nowUtc.minusMonths(3).toInstant();
+        Instant end = nowUtc.minus(endOffset).toInstant();
+        Instant start = nowUtc.minus(lookbackPeriod).toInstant();
 
         return StrategyExecutionContext.builder()
                 .executionId(UUID.randomUUID().toString())

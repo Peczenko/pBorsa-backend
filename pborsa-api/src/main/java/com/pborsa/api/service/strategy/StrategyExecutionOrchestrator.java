@@ -1,7 +1,7 @@
 package com.pborsa.api.service.strategy;
 
 import com.pborsa.api.client.tradingengine.TradingEngineClient;
-import com.pborsa.api.config.tradingengine.TradingEngineProperties;
+import com.pborsa.api.config.strategy.StrategyExecutionProperties;
 import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import com.pborsa.api.exception.StrategyExecutionException;
@@ -19,7 +19,7 @@ import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.DATA
 import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.TRADING_ENGINE_UNAVAILABLE;
 
 /**
- * Streams historical trades from Alpaca to the trading engine in batches.
+ * Streams historical quotes from Alpaca to the trading engine in batches.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,16 +31,16 @@ public class StrategyExecutionOrchestrator {
     private final UserCredentialsService credentialsService;
     private final AlpacaClientFactory alpacaClientFactory;
     private final TradingEngineClient tradingEngineClient;
-    private final AlpacaTradeFetcher tradeFetcher;
-    private final TradeBatcher tradeBatcher;
-    private final TradingEngineProperties tradingEngineProperties;
+    private final AlpacaQuoteFetcher quoteFetcher;
+    private final QuoteBatcher quoteBatcher;
+    private final StrategyExecutionProperties executionProperties;
 
     public void execute(StrategyExecutionContext context) {
         execute(context, null);
     }
 
     public void execute(StrategyExecutionContext context, Runnable heartbeat) {
-        log.info("Strategy execution {}: streaming {} trades for user {} strategy {} from {} to {}",
+        log.info("Strategy execution {}: streaming {} quotes for user {} strategy {} from {} to {}",
                 context.executionId(), context.symbol(), context.userId(), context.strategyId(),
                 context.start(), context.end());
 
@@ -52,8 +52,8 @@ public class StrategyExecutionOrchestrator {
         AlpacaCredentialsDto credentials = credentialsService.getCredentials(context.userId());
         AlpacaAPI client = alpacaClientFactory.getOrCreateClient(credentials);
 
-        int batchSize = Math.max(MIN_BATCH_SIZE, tradingEngineProperties.getBatchSize());
-        int pageLimit = tradingEngineProperties.getPageLimit();
+        int batchSize = Math.max(MIN_BATCH_SIZE, executionProperties.getBatchSize());
+        int pageLimit = executionProperties.getPageLimit();
         String symbol = context.symbol().toUpperCase();
         Runnable heartbeatRunner = heartbeat != null ? heartbeat : () -> {};
 
@@ -62,7 +62,7 @@ public class StrategyExecutionOrchestrator {
             StrategyExecutionStreamGuard guard = new StrategyExecutionStreamGuard(stream, heartbeatRunner);
             guard.checkpoint();
             do {
-                TradePage page = tradeFetcher.fetchPage(
+                QuotePage page = quoteFetcher.fetchPage(
                         client,
                         context.executionId(),
                         symbol,
@@ -70,13 +70,14 @@ public class StrategyExecutionOrchestrator {
                         context.end(),
                         pageLimit,
                         nextPageToken,
+                        executionProperties.getStockFeed(),
                         guard::checkpoint
                 );
 
-                log.info("Execution {} fetched {} trades (pageToken={}, nextPageToken={})",
-                        context.executionId(), page.trades().size(), nextPageToken, page.nextPageToken());
+                log.info("Execution {} fetched {} quotes (pageToken={}, nextPageToken={})",
+                        context.executionId(), page.quotes().size(), nextPageToken, page.nextPageToken());
 
-                tradeBatcher.forEachBatch(page.trades(), symbol, batchSize, guard::sendTrades);
+                quoteBatcher.forEachBatch(page.quotes(), symbol, batchSize, guard::sendQuotes);
 
                 nextPageToken = page.nextPageToken();
             } while (hasNext(nextPageToken));
@@ -87,7 +88,7 @@ public class StrategyExecutionOrchestrator {
             log.error("Alpaca API error streaming execution {}", context.executionId(), e);
             throw new StrategyExecutionException(
                     DATA_STREAM_ERROR,
-                    "Failed to fetch historical trades from Alpaca: " + e.getMessage(),
+                    "Failed to fetch historical quotes from Alpaca: " + e.getMessage(),
                     e
             );
         } catch (StatusRuntimeException | IllegalStateException e) {

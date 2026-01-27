@@ -30,24 +30,26 @@ message StrategyExecutionHeader {
   google.protobuf.Timestamp end = 7;
 }
 
-message Trade {
+message Quote {
   google.protobuf.Timestamp timestamp = 1;
-  double price = 2;
-  double size = 3;
-  string exchange = 4;
-  string trade_id = 5;
-  string tape = 6;
-  string conditions = 7;
+  double bid_price = 2;
+  double bid_size = 3;
+  double ask_price = 4;
+  double ask_size = 5;
+  string bid_exchange = 6;
+  string ask_exchange = 7;
+  string tape = 8;
+  string conditions = 9;
 }
 
-message TradeBatch {
-  repeated Trade trades = 1;
+message QuoteBatch {
+  repeated Quote quotes = 1;
 }
 
 message StrategyExecutionChunk {
   oneof payload {
     StrategyExecutionHeader header = 1;
-    TradeBatch trade_batch = 2;
+    QuoteBatch quote_batch = 2;
   }
 }
 
@@ -114,7 +116,7 @@ enum OrderStatusReason {
   AUTH_ERROR = 5;
   UNKNOWN = 6;
 }
-
+//TODO:
 message OrderRequest {
   int64 user_id = 1;
   string symbol = 2;
