@@ -2,10 +2,10 @@ package com.pborsa.api.client.tradingengine;
 
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.Timestamps;
-import com.pborsa.api.domain.dto.market.StockQuoteDto;
+import com.pborsa.api.domain.dto.market.StockBarDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
-import com.pborsa.api.tradingengine.v1.Quote;
-import com.pborsa.api.tradingengine.v1.QuoteBatch;
+import com.pborsa.api.tradingengine.v1.Bar;
+import com.pborsa.api.tradingengine.v1.BarBatch;
 import com.pborsa.api.tradingengine.v1.ExecutionAck;
 import com.pborsa.api.tradingengine.v1.StrategyExecutionChunk;
 import com.pborsa.api.tradingengine.v1.StrategyExecutionHeader;
@@ -27,6 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseable {
 
+    private static final int STREAM_CLOSE_TIMEOUT_SECONDS = 5;
+    private static final int CHANNEL_SHUTDOWN_TIMEOUT_SECONDS = 5;
+
     private final ManagedChannel channel;
     private final TradingEngineServiceGrpc.TradingEngineServiceStub asyncStub;
 
@@ -45,14 +48,25 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
     public TradingEngineStream startExecution(StrategyExecutionContext context) {
         Objects.requireNonNull(context, "Strategy execution context is required");
 
-        AtomicReference<ExecutionAck> ackRef = new AtomicReference<>();
         AtomicReference<Throwable> streamError = new AtomicReference<>();
         CountDownLatch finished = new CountDownLatch(1);
 
-        StreamObserver<ExecutionAck> responseObserver = new StreamObserver<>() {
+        StreamObserver<ExecutionAck> responseObserver = createResponseObserver(context, streamError, finished);
+        StreamObserver<StrategyExecutionChunk> requestObserver = asyncStub.executeStrategy(responseObserver);
+
+        sendHeader(requestObserver, context);
+
+        return new GrpcTradingEngineStream(context.executionId(), requestObserver, streamError, finished);
+    }
+
+    private StreamObserver<ExecutionAck> createResponseObserver(
+            StrategyExecutionContext context,
+            AtomicReference<Throwable> streamError,
+            CountDownLatch finished
+    ) {
+        return new StreamObserver<>() {
             @Override
             public void onNext(ExecutionAck value) {
-                ackRef.set(value);
                 log.info("Trading engine ack for execution {}: accepted={}, message={}",
                         context.executionId(), value.getAccepted(), value.getMessage());
                 if (!value.getAccepted()) {
@@ -73,47 +87,12 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
                 finished.countDown();
             }
         };
+    }
 
-        StreamObserver<StrategyExecutionChunk> requestObserver = asyncStub.executeStrategy(responseObserver);
+    private void sendHeader(StreamObserver<StrategyExecutionChunk> requestObserver, StrategyExecutionContext context) {
         requestObserver.onNext(StrategyExecutionChunk.newBuilder()
                 .setHeader(toHeader(context))
                 .build());
-
-        return new TradingEngineStream() {
-            @Override
-            public void sendQuotes(List<StockQuoteDto> quotes) {
-                ensureHealthy();
-                if (quotes == null || quotes.isEmpty()) {
-                    return;
-                }
-                QuoteBatch.Builder batchBuilder = QuoteBatch.newBuilder();
-                for (StockQuoteDto quote : quotes) {
-                    batchBuilder.addQuotes(toProtoQuote(quote));
-                }
-                requestObserver.onNext(StrategyExecutionChunk.newBuilder()
-                        .setQuoteBatch(batchBuilder.build())
-                        .build());
-            }
-
-            @Override
-            public void ensureHealthy() {
-                Throwable error = streamError.get();
-                if (error != null) {
-                    throw new IllegalStateException("Trading engine stream failed for execution "
-                            + context.executionId(), error);
-                }
-            }
-
-            @Override
-            public void closeStream() {
-                try {
-                    requestObserver.onCompleted();
-                    finished.await(5, TimeUnit.SECONDS);
-                } catch (Exception e) {
-                    log.warn("Error closing trading engine stream for execution {}", context.executionId(), e);
-                }
-            }
-        };
     }
 
     private StrategyExecutionHeader toHeader(StrategyExecutionContext context) {
@@ -127,37 +106,34 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
                 .build();
     }
 
-    private Quote toProtoQuote(StockQuoteDto quote) {
-        Quote.Builder builder = Quote.newBuilder()
-                .setTimestamp(toTimestamp(quote.timestamp()));
-        if (quote.bidPrice() != null) {
-            builder.setBidPrice(quote.bidPrice().doubleValue());
+    private static Bar toProtoBar(StockBarDto bar) {
+        Bar.Builder builder = Bar.newBuilder()
+                .setTimestamp(toTimestamp(bar.timestamp()));
+        if (bar.open() != null) {
+            builder.setOpen(bar.open().doubleValue());
         }
-        if (quote.bidSize() != null) {
-            builder.setBidSize(quote.bidSize().doubleValue());
+        if (bar.high() != null) {
+            builder.setHigh(bar.high().doubleValue());
         }
-        if (quote.askPrice() != null) {
-            builder.setAskPrice(quote.askPrice().doubleValue());
+        if (bar.low() != null) {
+            builder.setLow(bar.low().doubleValue());
         }
-        if (quote.askSize() != null) {
-            builder.setAskSize(quote.askSize().doubleValue());
+        if (bar.close() != null) {
+            builder.setClose(bar.close().doubleValue());
         }
-        if (quote.bidExchange() != null) {
-            builder.setBidExchange(quote.bidExchange());
+        if (bar.volume() != null) {
+            builder.setVolume(bar.volume());
         }
-        if (quote.askExchange() != null) {
-            builder.setAskExchange(quote.askExchange());
+        if (bar.tradeCount() != null) {
+            builder.setTradeCount(bar.tradeCount());
         }
-        if (quote.tape() != null) {
-            builder.setTape(quote.tape());
-        }
-        if (quote.conditions() != null) {
-            builder.setConditions(quote.conditions());
+        if (bar.vwap() != null) {
+            builder.setVwap(bar.vwap().doubleValue());
         }
         return builder.build();
     }
 
-    private Timestamp toTimestamp(java.time.Instant instant) {
+    private static Timestamp toTimestamp(java.time.Instant instant) {
         if (instant == null) {
             return Timestamps.fromMillis(0);
         }
@@ -169,9 +145,64 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
         if (channel != null && !channel.isShutdown()) {
             channel.shutdown();
             try {
-                channel.awaitTermination(5, TimeUnit.SECONDS);
+                channel.awaitTermination(CHANNEL_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Inner class for the trading engine stream, improving encapsulation.
+     */
+    private static class GrpcTradingEngineStream implements TradingEngineStream {
+        private final String executionId;
+        private final StreamObserver<StrategyExecutionChunk> requestObserver;
+        private final AtomicReference<Throwable> streamError;
+        private final CountDownLatch finished;
+
+        GrpcTradingEngineStream(
+                String executionId,
+                StreamObserver<StrategyExecutionChunk> requestObserver,
+                AtomicReference<Throwable> streamError,
+                CountDownLatch finished
+        ) {
+            this.executionId = executionId;
+            this.requestObserver = requestObserver;
+            this.streamError = streamError;
+            this.finished = finished;
+        }
+
+        @Override
+        public void sendBars(List<StockBarDto> bars) {
+            ensureHealthy();
+            if (bars == null || bars.isEmpty()) {
+                return;
+            }
+            BarBatch.Builder batchBuilder = BarBatch.newBuilder();
+            for (StockBarDto bar : bars) {
+                batchBuilder.addBars(toProtoBar(bar));
+            }
+            requestObserver.onNext(StrategyExecutionChunk.newBuilder()
+                    .setBarBatch(batchBuilder.build())
+                    .build());
+        }
+
+        @Override
+        public void ensureHealthy() {
+            Throwable error = streamError.get();
+            if (error != null) {
+                throw new IllegalStateException("Trading engine stream failed for execution " + executionId, error);
+            }
+        }
+
+        @Override
+        public void closeStream() {
+            try {
+                requestObserver.onCompleted();
+                finished.await(STREAM_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.warn("Error closing trading engine stream for execution {}", executionId, e);
             }
         }
     }

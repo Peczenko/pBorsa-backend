@@ -32,6 +32,12 @@ public class StrategyExecutionProperties {
     private StockFeed stockFeed = StockFeed.IEX;
 
     /**
+     * Bar timeframe for historical data.
+     * Valid values: 1Min, 5Min, 15Min, 30Min, 1Hour, 4Hour, 1Day, 1Week, 1Month
+     */
+    private String timeframe = "5Min";
+
+    /**
      * Maximum number of records per API page request.
      */
     private int pageLimit = 10000;

@@ -38,7 +38,7 @@ public record StockBarDto(
             return BigDecimal.ZERO;
         }
         return priceChange()
-                .divide(open, 6, BigDecimal.ROUND_HALF_UP)
+                .divide(open, 6, java.math.RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
 

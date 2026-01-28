@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Sample trading engine gRPC server:
-- ExecuteStrategy: receives header + quote batches, saves header to JSON and quotes to JSONL
+- ExecuteStrategy: receives header + bar batches (OHLCV), saves header to JSON and bars to JSONL
 - NotifyOrderStatusUpdate: receives order status updates from pBorsa API
 
 Usage:
@@ -27,13 +27,13 @@ logging.basicConfig(
 logger = logging.getLogger("trading-engine-server")
 
 HEADER_PATH = "received_header.json"
-QUOTES_PATH = "received_quotes.jsonl"
+BARS_PATH = "received_bars.jsonl"
 
 
 class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
     def ExecuteStrategy(self, request_iterator, context):
         header = None
-        total_quotes = 0
+        total_bars = 0
 
         for chunk in request_iterator:
             if chunk.HasField("header"):
@@ -55,36 +55,35 @@ class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
                 logger.info("Received strategy execution header: %s", header.execution_id)
                 logger.info("Header saved to %s", HEADER_PATH)
 
-            elif chunk.HasField("quote_batch"):
-                quotes = chunk.quote_batch.quotes
-                total_quotes += len(quotes)
+            elif chunk.HasField("bar_batch"):
+                bars = chunk.bar_batch.bars
+                total_bars += len(bars)
 
                 logger.info(
-                    "Received batch of %d quotes (total=%d)", len(quotes), total_quotes
+                    "Received batch of %d bars (total=%d)", len(bars), total_bars
                 )
 
-                with open(QUOTES_PATH, "a", encoding="utf-8") as qf:
-                    for quote in quotes:
-                        qf.write(
+                with open(BARS_PATH, "a", encoding="utf-8") as bf:
+                    for bar in bars:
+                        bf.write(
                             json.dumps(
                                 {
                                     "executionId": header.execution_id if header else "",
                                     "symbol": header.symbol if header else "",
-                                    "timestamp": quote.timestamp.ToDatetime().isoformat(),
-                                    "bidPrice": quote.bid_price,
-                                    "bidSize": quote.bid_size,
-                                    "askPrice": quote.ask_price,
-                                    "askSize": quote.ask_size,
-                                    "bidExchange": quote.bid_exchange,
-                                    "askExchange": quote.ask_exchange,
-                                    "tape": quote.tape,
-                                    "conditions": quote.conditions,
+                                    "timestamp": bar.timestamp.ToDatetime().isoformat(),
+                                    "open": bar.open,
+                                    "high": bar.high,
+                                    "low": bar.low,
+                                    "close": bar.close,
+                                    "volume": bar.volume,
+                                    "tradeCount": bar.trade_count,
+                                    "vwap": bar.vwap,
                                 }
                             )
                             + "\n"
                         )
 
-        msg = f"Received {total_quotes} quotes" + (
+        msg = f"Received {total_bars} bars" + (
             f" for {header.execution_id}" if header else ""
         )
         return pb2.ExecutionAck(

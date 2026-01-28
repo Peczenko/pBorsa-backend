@@ -3,23 +3,28 @@ package com.pborsa.api.service.strategy;
 import com.pborsa.api.client.tradingengine.TradingEngineClient;
 import com.pborsa.api.config.strategy.StrategyExecutionProperties;
 import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
+import com.pborsa.api.domain.dto.market.StockBarDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import com.pborsa.api.exception.StrategyExecutionException;
 import com.pborsa.api.service.alpaca.AlpacaClientFactory;
 import com.pborsa.api.service.credentials.UserCredentialsService;
+import com.pborsa.api.service.mapper.MarketDataMapper;
 import io.grpc.StatusRuntimeException;
 import io.temporal.client.ActivityCompletionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jacobpeterson.alpaca.AlpacaAPI;
 import net.jacobpeterson.alpaca.openapi.marketdata.ApiException;
+import net.jacobpeterson.alpaca.openapi.marketdata.model.StockBar;
 import org.springframework.stereotype.Service;
+
+import java.util.function.Function;
 
 import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.DATA_STREAM_ERROR;
 import static com.pborsa.api.exception.StrategyExecutionException.ErrorCode.TRADING_ENGINE_UNAVAILABLE;
 
 /**
- * Streams historical quotes from Alpaca to the trading engine in batches.
+ * Streams historical bar data from Alpaca to the trading engine in batches.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,8 +36,9 @@ public class StrategyExecutionOrchestrator {
     private final UserCredentialsService credentialsService;
     private final AlpacaClientFactory alpacaClientFactory;
     private final TradingEngineClient tradingEngineClient;
-    private final AlpacaQuoteFetcher quoteFetcher;
-    private final QuoteBatcher quoteBatcher;
+    private final AlpacaBarFetcher barFetcher;
+    private final DataBatcher dataBatcher;
+    private final MarketDataMapper marketDataMapper;
     private final StrategyExecutionProperties executionProperties;
 
     public void execute(StrategyExecutionContext context) {
@@ -40,9 +46,9 @@ public class StrategyExecutionOrchestrator {
     }
 
     public void execute(StrategyExecutionContext context, Runnable heartbeat) {
-        log.info("Strategy execution {}: streaming {} quotes for user {} strategy {} from {} to {}",
-                context.executionId(), context.symbol(), context.userId(), context.strategyId(),
-                context.start(), context.end());
+        log.info("Strategy execution {}: streaming {} bars ({}) for user {} strategy {} from {} to {}",
+                context.executionId(), context.symbol(), executionProperties.getTimeframe(),
+                context.userId(), context.strategyId(), context.start(), context.end());
 
         if (!tradingEngineClient.isEnabled()) {
             log.info("Trading engine client disabled. Skipping streaming for execution {}.", context.executionId());
@@ -57,27 +63,30 @@ public class StrategyExecutionOrchestrator {
         String symbol = context.symbol().toUpperCase();
         Runnable heartbeatRunner = heartbeat != null ? heartbeat : () -> {};
 
+        Function<StockBar, StockBarDto> barMapper = bar -> marketDataMapper.toStockBarDto(bar, symbol);
+
         String nextPageToken = null;
         try (TradingEngineClient.TradingEngineStream stream = tradingEngineClient.startExecution(context)) {
             StrategyExecutionStreamGuard guard = new StrategyExecutionStreamGuard(stream, heartbeatRunner);
             guard.checkpoint();
             do {
-                QuotePage page = quoteFetcher.fetchPage(
+                BarPage page = barFetcher.fetchPage(
                         client,
                         context.executionId(),
                         symbol,
                         context.start(),
                         context.end(),
+                        executionProperties.getTimeframe(),
                         pageLimit,
                         nextPageToken,
                         executionProperties.getStockFeed(),
                         guard::checkpoint
                 );
 
-                log.info("Execution {} fetched {} quotes (pageToken={}, nextPageToken={})",
-                        context.executionId(), page.quotes().size(), nextPageToken, page.nextPageToken());
+                log.info("Execution {} fetched {} bars (pageToken={}, nextPageToken={})",
+                        context.executionId(), page.bars().size(), nextPageToken, page.nextPageToken());
 
-                quoteBatcher.forEachBatch(page.quotes(), symbol, batchSize, guard::sendQuotes);
+                dataBatcher.processBatches(page.bars(), batchSize, barMapper, guard::sendBars);
 
                 nextPageToken = page.nextPageToken();
             } while (hasNext(nextPageToken));
@@ -88,7 +97,7 @@ public class StrategyExecutionOrchestrator {
             log.error("Alpaca API error streaming execution {}", context.executionId(), e);
             throw new StrategyExecutionException(
                     DATA_STREAM_ERROR,
-                    "Failed to fetch historical quotes from Alpaca: " + e.getMessage(),
+                    "Failed to fetch historical bars from Alpaca: " + e.getMessage(),
                     e
             );
         } catch (StatusRuntimeException | IllegalStateException e) {

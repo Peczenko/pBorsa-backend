@@ -30,26 +30,25 @@ message StrategyExecutionHeader {
   google.protobuf.Timestamp end = 7;
 }
 
-message Quote {
+message Bar {
   google.protobuf.Timestamp timestamp = 1;
-  double bid_price = 2;
-  double bid_size = 3;
-  double ask_price = 4;
-  double ask_size = 5;
-  string bid_exchange = 6;
-  string ask_exchange = 7;
-  string tape = 8;
-  string conditions = 9;
+  double open = 2;
+  double high = 3;
+  double low = 4;
+  double close = 5;
+  int64 volume = 6;
+  int64 trade_count = 7;
+  double vwap = 8;
 }
 
-message QuoteBatch {
-  repeated Quote quotes = 1;
+message BarBatch {
+  repeated Bar bars = 1;
 }
 
 message StrategyExecutionChunk {
   oneof payload {
     StrategyExecutionHeader header = 1;
-    QuoteBatch quote_batch = 2;
+    BarBatch bar_batch = 2;
   }
 }
 

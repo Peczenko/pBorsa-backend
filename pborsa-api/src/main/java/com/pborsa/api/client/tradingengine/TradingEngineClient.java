@@ -1,6 +1,6 @@
 package com.pborsa.api.client.tradingengine;
 
-import com.pborsa.api.domain.dto.market.StockQuoteDto;
+import com.pborsa.api.domain.dto.market.StockBarDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public interface TradingEngineClient {
     }
 
     interface TradingEngineStream extends AutoCloseable {
-        void sendQuotes(List<StockQuoteDto> quotes);
+        void sendBars(List<StockBarDto> bars);
 
         default void ensureHealthy() {
             // no-op by default

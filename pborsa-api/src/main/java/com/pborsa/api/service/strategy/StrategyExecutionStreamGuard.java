@@ -1,11 +1,15 @@
 package com.pborsa.api.service.strategy;
 
 import com.pborsa.api.client.tradingengine.TradingEngineClient;
-import com.pborsa.api.domain.dto.market.StockQuoteDto;
+import com.pborsa.api.domain.dto.market.StockBarDto;
 
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Guards the trading engine stream with health checks and heartbeat callbacks.
+ * Ensures stream health before each data send operation.
+ */
 final class StrategyExecutionStreamGuard {
 
     private final TradingEngineClient.TradingEngineStream stream;
@@ -21,8 +25,8 @@ final class StrategyExecutionStreamGuard {
         stream.ensureHealthy();
     }
 
-    void sendQuotes(List<StockQuoteDto> quotes) {
+    void sendBars(List<StockBarDto> bars) {
         checkpoint();
-        stream.sendQuotes(quotes);
+        stream.sendBars(bars);
     }
 }

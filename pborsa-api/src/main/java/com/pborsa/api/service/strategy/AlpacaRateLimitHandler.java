@@ -1,63 +1,53 @@
 package com.pborsa.api.service.strategy;
 
 import lombok.extern.slf4j.Slf4j;
-import net.jacobpeterson.alpaca.AlpacaAPI;
 import net.jacobpeterson.alpaca.openapi.marketdata.ApiException;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.Sort;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.StockFeed;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.StockQuote;
-import net.jacobpeterson.alpaca.openapi.marketdata.model.StockQuotesResp;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@Service
+/**
+ * Handles Alpaca API rate limiting with exponential backoff.
+ * Reusable across different Alpaca API fetchers.
+ */
+@Component
 @Slf4j
-public class AlpacaQuoteFetcher {
+public class AlpacaRateLimitHandler {
 
     private static final int RATE_LIMIT_STATUS_CODE = 429;
     private static final long BASE_BACKOFF_MILLIS = 1000L;
     private static final long MAX_BACKOFF_MILLIS = 60_000L;
+    private static final int MAX_BACKOFF_EXPONENT = 5;
 
-    public QuotePage fetchPage(AlpacaAPI client,
-                               String executionId,
-                               String symbol,
-                               Instant start,
-                               Instant end,
-                               int pageLimit,
-                               String pageToken,
-                               StockFeed stockFeed,
-                               Runnable checkpoint) throws ApiException {
+    /**
+     * Executes an API call with rate limit handling and retries.
+     *
+     * @param apiCall      the API call to execute
+     * @param contextId    identifier for logging (e.g., execution ID)
+     * @param checkpoint   optional checkpoint callback for heartbeats
+     * @param <T>          return type of the API call
+     * @return the result of the API call
+     * @throws ApiException if the API call fails for non-rate-limit reasons
+     */
+    public <T> T executeWithRetry(
+            ApiCallable<T> apiCall,
+            String contextId,
+            Runnable checkpoint
+    ) throws ApiException {
         Runnable checkpointRunner = checkpoint != null ? checkpoint : () -> {};
         int rateLimitAttempts = 0;
 
         while (true) {
             checkpointRunner.run();
             try {
-                StockQuotesResp resp = client.marketData().stock().stockQuotes(
-                        symbol,
-                        OffsetDateTime.ofInstant(start, ZoneOffset.UTC),
-                        OffsetDateTime.ofInstant(end, ZoneOffset.UTC),
-                        (long) pageLimit,
-                        null,
-                        stockFeed,
-                        null,
-                        pageToken,
-                        Sort.ASC
-                );
-                rateLimitAttempts = 0;
-                return new QuotePage(extractQuotes(resp, symbol), resp.getNextPageToken());
+                return apiCall.call();
             } catch (ApiException e) {
                 if (e.getCode() == RATE_LIMIT_STATUS_CODE) {
                     rateLimitAttempts++;
-                    long backoffMillis = resolveRateLimitBackoffMillis(e, rateLimitAttempts);
-                    log.warn("Execution {} rate limited by Alpaca. Backing off {} ms before retrying pageToken={}",
-                            executionId, backoffMillis, pageToken);
+                    long backoffMillis = resolveBackoffMillis(e, rateLimitAttempts);
+                    log.warn("Context {} rate limited by Alpaca. Backing off {} ms (attempt {})",
+                            contextId, backoffMillis, rateLimitAttempts);
                     sleepWithCheckpoint(backoffMillis, checkpointRunner);
                     continue;
                 }
@@ -66,20 +56,12 @@ public class AlpacaQuoteFetcher {
         }
     }
 
-    private List<StockQuote> extractQuotes(StockQuotesResp resp, String symbol) {
-        if (resp == null) {
-            return Collections.emptyList();
-        }
-        Map<String, List<StockQuote>> quotesMap = resp.getQuotes();
-        return quotesMap.getOrDefault(symbol, Collections.emptyList());
-    }
-
-    private long resolveRateLimitBackoffMillis(ApiException exception, int attempt) {
+    private long resolveBackoffMillis(ApiException exception, int attempt) {
         Long retryAfterSeconds = extractRetryAfterSeconds(exception);
         if (retryAfterSeconds != null && retryAfterSeconds > 0) {
             return Math.min(MAX_BACKOFF_MILLIS, retryAfterSeconds * 1000L);
         }
-        long backoff = BASE_BACKOFF_MILLIS * (1L << Math.min(attempt - 1, 5));
+        long backoff = BASE_BACKOFF_MILLIS * (1L << Math.min(attempt - 1, MAX_BACKOFF_EXPONENT));
         return Math.min(MAX_BACKOFF_MILLIS, backoff);
     }
 
@@ -116,5 +98,13 @@ public class AlpacaQuoteFetcher {
             }
             remaining -= sleepMillis;
         }
+    }
+
+    /**
+     * Functional interface for API calls that may throw ApiException.
+     */
+    @FunctionalInterface
+    public interface ApiCallable<T> {
+        T call() throws ApiException;
     }
 }

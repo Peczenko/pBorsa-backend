@@ -1,6 +1,6 @@
 package com.pborsa.api.client.tradingengine;
 
-import com.pborsa.api.domain.dto.market.StockQuoteDto;
+import com.pborsa.api.domain.dto.market.StockBarDto;
 import com.pborsa.api.domain.dto.strategy.StrategyExecutionContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,20 +12,22 @@ import java.util.List;
 @Slf4j
 public class NoopTradingEngineClient implements TradingEngineClient {
 
+    private static final TradingEngineStream NOOP_STREAM = new TradingEngineStream() {
+        @Override
+        public void sendBars(List<StockBarDto> bars) {
+            // no-op
+        }
+
+        @Override
+        public void closeStream() {
+            // no-op
+        }
+    };
+
     @Override
     public TradingEngineStream startExecution(StrategyExecutionContext context) {
         log.info("Trading engine client disabled. Skipping stream for execution {}", context.executionId());
-        return new TradingEngineStream() {
-            @Override
-            public void sendQuotes(List<StockQuoteDto> quotes) {
-                // no-op
-            }
-
-            @Override
-            public void closeStream() {
-                // no-op
-            }
-        };
+        return NOOP_STREAM;
     }
 
     @Override
