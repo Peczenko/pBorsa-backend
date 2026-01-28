@@ -27,4 +27,14 @@ public interface StrategyExecutionActivities {
      */
     @ActivityMethod
     void markStrategyActive(Long strategyId);
+
+    /**
+     * Marks the strategy as failed to start.
+     * Called when data streaming or preparation fails.
+     *
+     * @param strategyId   The user strategy ID
+     * @param errorMessage The error message describing the failure
+     */
+    @ActivityMethod
+    void markStrategyStartFailed(Long strategyId, String errorMessage);
 }

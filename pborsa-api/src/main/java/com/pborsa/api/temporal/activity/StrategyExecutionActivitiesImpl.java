@@ -34,4 +34,11 @@ public class StrategyExecutionActivitiesImpl implements StrategyExecutionActivit
         userStrategyService.markStrategyActive(strategyId);
         log.info("Strategy {} marked as active", strategyId);
     }
+
+    @Override
+    public void markStrategyStartFailed(Long strategyId, String errorMessage) {
+        log.info("Activity marking strategy {} as start failed: {}", strategyId, errorMessage);
+        userStrategyService.markStrategyStartFailed(strategyId, errorMessage);
+        log.info("Strategy {} marked as start failed", strategyId);
+    }
 }

@@ -33,7 +33,13 @@ public enum UserStrategyStatus {
     /**
      * Strategy has been stopped and will not generate new orders.
      */
-    STOPPED;
+    STOPPED,
+
+    /**
+     * Strategy failed to start - data transfer or preparation failed.
+     * Can be retried by transitioning back to PREPARING.
+     */
+    START_FAILED;
 
     /**
      * Map of allowed transitions from each status.
@@ -43,10 +49,11 @@ public enum UserStrategyStatus {
     static {
         Map<UserStrategyStatus, Set<UserStrategyStatus>> transitions = new EnumMap<>(UserStrategyStatus.class);
         transitions.put(CREATED, EnumSet.of(PREPARING));
-        transitions.put(PREPARING, EnumSet.of(ACTIVE, STOPPED));
+        transitions.put(PREPARING, EnumSet.of(ACTIVE, STOPPED, START_FAILED));
         transitions.put(ACTIVE, EnumSet.of(PAUSED, STOPPED));
         transitions.put(PAUSED, EnumSet.of(ACTIVE, STOPPED));
         transitions.put(STOPPED, EnumSet.noneOf(UserStrategyStatus.class));
+        transitions.put(START_FAILED, EnumSet.of(PREPARING));
         ALLOWED_TRANSITIONS = Collections.unmodifiableMap(transitions);
     }
 

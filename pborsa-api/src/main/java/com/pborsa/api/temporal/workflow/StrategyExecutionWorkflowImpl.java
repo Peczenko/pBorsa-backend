@@ -58,10 +58,17 @@ public class StrategyExecutionWorkflowImpl implements StrategyExecutionWorkflow 
 
     @Override
     public void execute(StrategyExecutionContext context) {
-        // Step 1: Stream historical data to trading engine
-        streamingActivities.streamHistoricalData(context);
+        try {
+            // Step 1: Stream historical data to trading engine
+            streamingActivities.streamHistoricalData(context);
 
-        // Step 2: Mark strategy as active after data transfer completes
-        statusActivities.markStrategyActive(context.strategyId());
+            // Step 2: Mark strategy as active after data transfer completes
+            statusActivities.markStrategyActive(context.strategyId());
+        } catch (Exception e) {
+            // Mark strategy as failed if data streaming fails
+            String errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            statusActivities.markStrategyStartFailed(context.strategyId(), errorMessage);
+            throw e;
+        }
     }
 }

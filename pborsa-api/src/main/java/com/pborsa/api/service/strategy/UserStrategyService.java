@@ -322,7 +322,7 @@ public class UserStrategyService {
     }
 
     private boolean strategyCanBeDeleted(UserStrategyStatus status) {
-        return status.canTransitionTo(STOPPED);
+        return status == CREATED || status == STOPPED || status == START_FAILED;
     }
 
     /**
@@ -368,6 +368,42 @@ public class UserStrategyService {
 
         // Publish event
         publishStatusChangedEvent(entity, oldStatus, UserStrategyStatus.ACTIVE);
+    }
+
+    /**
+     * Marks a strategy as failed to start.
+     * Called by Temporal workflow when data streaming or preparation fails.
+     *
+     * @param strategyId   Strategy ID
+     * @param errorMessage Error message describing the failure
+     * @throws IllegalStateException if strategy is not in PREPARING status
+     */
+    @Transactional
+    public void markStrategyStartFailed(Long strategyId, String errorMessage) {
+        if (strategyId == null) {
+            throw new IllegalArgumentException("Strategy ID is required");
+        }
+
+        log.debug("Marking strategy {} as start failed: {}", strategyId, errorMessage);
+
+        UserStrategyEntity entity = userStrategyRepository.findById(strategyId)
+                .orElseThrow(() -> new IllegalArgumentException("Strategy not found: " + strategyId));
+
+        UserStrategyStatus oldStatus = entity.getStatus();
+
+        if (oldStatus != UserStrategyStatus.PREPARING) {
+            log.warn("Strategy {} is not in PREPARING status (current: {}), skipping start failed transition",
+                    strategyId, oldStatus);
+            return;
+        }
+
+        entity.setStatus(UserStrategyStatus.START_FAILED);
+        userStrategyRepository.save(entity);
+
+        log.error("Strategy {} marked as start failed (user: {}): {}", strategyId, entity.getUserId(), errorMessage);
+
+        // Publish event
+        publishStatusChangedEvent(entity, oldStatus, UserStrategyStatus.START_FAILED);
     }
 }
 
