@@ -72,6 +72,15 @@ public interface UserStrategyRepository extends JpaRepository<UserStrategyEntity
      */
     @Query("SELECT us.userId FROM UserStrategyEntity us WHERE us.status = 'ACTIVE' ORDER BY us.id LIMIT 1")
     Optional<Long> findAnyActiveUserId();
+
+    /**
+     * Finds all active symbols with their strategy IDs.
+     * Returns pairs of (symbol, strategyId) for bar streaming to trading engine.
+     *
+     * @return List of Object arrays where [0]=symbol (String), [1]=strategyId (Long)
+     */
+    @Query("SELECT us.symbol, us.id FROM UserStrategyEntity us WHERE us.status = 'ACTIVE'")
+    List<Object[]> findActiveSymbolsWithStrategyIds();
 }
 
 

@@ -2,6 +2,7 @@
 """
 Sample trading engine gRPC server:
 - ExecuteStrategy: receives header + bar batches (OHLCV), saves header to JSON and bars to JSONL
+- SendLiveBars: receives periodic live bar updates from pBorsa API
 - NotifyOrderStatusUpdate: receives order status updates from pBorsa API
 
 Usage:
@@ -28,6 +29,7 @@ logger = logging.getLogger("trading-engine-server")
 
 HEADER_PATH = "received_header.json"
 BARS_PATH = "received_bars.jsonl"
+LIVE_BARS_PATH = "received_live_bars.jsonl"
 
 
 class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
@@ -92,6 +94,48 @@ class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
             execution_id=header.execution_id if header else "",
         )
 
+    def SendLiveBars(self, request, context):
+        """Handle periodic live bar updates from pBorsa API."""
+        update_time = request.update_time.ToDatetime().isoformat()
+        bars = request.bars
+        strategy_ids = list(request.strategy_ids)
+
+        logger.info(
+            "Received live bar update: %d bars for %d strategies at %s",
+            len(bars),
+            len(strategy_ids),
+            update_time,
+        )
+
+        with open(LIVE_BARS_PATH, "a", encoding="utf-8") as lf:
+            for symbol_bar in bars:
+                bar = symbol_bar.bar
+                lf.write(
+                    json.dumps(
+                        {
+                            "updateTime": update_time,
+                            "symbol": symbol_bar.symbol,
+                            "timeframe": symbol_bar.timeframe,
+                            "strategyIds": strategy_ids,
+                            "timestamp": bar.timestamp.ToDatetime().isoformat(),
+                            "open": bar.open,
+                            "high": bar.high,
+                            "low": bar.low,
+                            "close": bar.close,
+                            "volume": bar.volume,
+                            "tradeCount": bar.trade_count,
+                            "vwap": bar.vwap,
+                        }
+                    )
+                    + "\n"
+                )
+
+        return pb2.LiveBarUpdateAck(
+            received=True,
+            message=f"Processed {len(bars)} live bars",
+            bars_processed=len(bars),
+        )
+
     def NotifyOrderStatusUpdate(self, request, context):
         client_order_id = request.client_order_id
         order_id = request.order_id
@@ -124,7 +168,7 @@ def serve(port: int) -> None:
     server.start()
 
     logger.info("Trading engine gRPC server listening on 0.0.0.0:%d", port)
-    logger.info("ExecuteStrategy + NotifyOrderStatusUpdate are ready")
+    logger.info("ExecuteStrategy + SendLiveBars + NotifyOrderStatusUpdate are ready")
 
     server.wait_for_termination()
 

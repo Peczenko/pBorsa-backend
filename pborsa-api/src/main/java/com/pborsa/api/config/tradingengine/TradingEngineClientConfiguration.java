@@ -1,6 +1,9 @@
 package com.pborsa.api.config.tradingengine;
 
+import com.pborsa.api.client.tradingengine.GrpcLiveBarClient;
 import com.pborsa.api.client.tradingengine.GrpcTradingEngineClient;
+import com.pborsa.api.client.tradingengine.LiveBarClient;
+import com.pborsa.api.client.tradingengine.NoopLiveBarClient;
 import com.pborsa.api.client.tradingengine.NoopTradingEngineClient;
 import com.pborsa.api.client.tradingengine.TradingEngineClient;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Creates trading engine client bean (gRPC or noop).
+ * Creates trading engine client beans (gRPC or noop).
  */
 @Configuration
 @RequiredArgsConstructor
@@ -27,6 +30,17 @@ public class TradingEngineClientConfiguration {
         String target = normalizeTarget(properties.getAddress());
         log.info("Creating trading engine gRPC client targeting {}", target);
         return new GrpcTradingEngineClient(target);
+    }
+
+    @Bean
+    public LiveBarClient liveBarClient() {
+        if (!properties.isEnabled()) {
+            log.info("Live bar gRPC client disabled via configuration.");
+            return new NoopLiveBarClient();
+        }
+        String target = normalizeTarget(properties.getAddress());
+        log.info("Creating live bar gRPC client targeting {}", target);
+        return new GrpcLiveBarClient(target);
     }
 
     private String normalizeTarget(String address) {

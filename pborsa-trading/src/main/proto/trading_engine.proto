@@ -9,7 +9,12 @@ option java_outer_classname = "TradingEngineProto";
 import "google/protobuf/timestamp.proto";
 
 service TradingEngineService {
+  // Initial strategy execution with historical data streaming
   rpc ExecuteStrategy(stream StrategyExecutionChunk) returns (ExecutionAck);
+
+  // Live bar updates (called periodically, e.g., every minute)
+  rpc SendLiveBars(LiveBarUpdate) returns (LiveBarUpdateAck);
+
   // API calls this when order status changes
   rpc NotifyOrderStatusUpdate(OrderStatusUpdate) returns (OrderStatusUpdateAck);
 }
@@ -56,6 +61,27 @@ message ExecutionAck {
   bool accepted = 1;
   string message = 2;
   string execution_id = 3;
+}
+
+// ===================== Live Bar Updates =====================
+
+message SymbolBar {
+  string symbol = 1;
+  string timeframe = 2;
+  Bar bar = 3;
+}
+
+message LiveBarUpdate {
+  google.protobuf.Timestamp update_time = 1;
+  repeated SymbolBar bars = 2;
+  // Optional: which strategies are interested in these symbols
+  repeated int64 strategy_ids = 3;
+}
+
+message LiveBarUpdateAck {
+  bool received = 1;
+  string message = 2;
+  int32 bars_processed = 3;
 }
 
 // ===================== Orders =====================

@@ -1,12 +1,8 @@
 package com.pborsa.api.controller;
 
 import com.pborsa.api.controller.response.ApiResponse;
-import com.pborsa.api.domain.dto.market.MarketDataSnapshot;
 import com.pborsa.api.domain.dto.market.StockBarDto;
-import com.pborsa.api.domain.dto.market.StockQuoteDto;
-import com.pborsa.api.domain.dto.market.StockTradeDto;
 import com.pborsa.api.service.market.MarketDataService;
-import com.pborsa.api.temporal.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +10,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Controller for market data operations.
+ *
+ * <p><b>Note:</b> This controller is deprecated for UI bar operations.
+ * Use {@code /api/v1/bars} endpoints (BarDataController) instead.
+ *
+ * <p>Quote and trade endpoints have been removed.
+ * For real-time data needs, use the bar streaming service.
  */
 @RestController
 @RequestMapping("/api/v1/market-data")
@@ -27,60 +27,14 @@ import java.util.concurrent.CompletableFuture;
 public class MarketDataController {
 
     private final MarketDataService marketDataService;
-    private final WorkflowService workflowService;
-
-    /**
-     * Gets latest quotes for symbols.
-     */
-    @GetMapping("/{userId}/quotes")
-    public ResponseEntity<ApiResponse<List<StockQuoteDto>>> getQuotes(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        log.debug("Getting quotes for user {} symbols: {}", userId, symbols);
-        List<StockQuoteDto> quotes = marketDataService.getLatestQuotes(userId, symbols);
-        return ResponseEntity.ok(ApiResponse.success(quotes));
-    }
-
-    /**
-     * Gets latest quote for a single symbol.
-     */
-    @GetMapping("/{userId}/quotes/{symbol}")
-    public ResponseEntity<ApiResponse<StockQuoteDto>> getQuote(
-            @PathVariable Long userId,
-            @PathVariable String symbol
-    ) {
-        StockQuoteDto quote = marketDataService.getLatestQuote(userId, symbol);
-        return ResponseEntity.ok(ApiResponse.success(quote));
-    }
-
-    /**
-     * Gets quotes asynchronously.
-     */
-    @GetMapping("/{userId}/quotes/async")
-    public CompletableFuture<ResponseEntity<ApiResponse<List<StockQuoteDto>>>> getQuotesAsync(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        return marketDataService.getLatestQuotesAsync(userId, symbols)
-                .thenApply(quotes -> ResponseEntity.ok(ApiResponse.success(quotes)));
-    }
-
-    /**
-     * Gets latest trades for symbols.
-     */
-    @GetMapping("/{userId}/trades")
-    public ResponseEntity<ApiResponse<List<StockTradeDto>>> getTrades(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        List<StockTradeDto> trades = marketDataService.getLatestTrades(userId, symbols);
-        return ResponseEntity.ok(ApiResponse.success(trades));
-    }
 
     /**
      * Gets historical bars.
+     *
+     * @deprecated Use {@code /api/v1/bars/{userId}/{symbol}/historical} instead.
+     *             This endpoint will be removed in a future version.
      */
+    @Deprecated(since = "2.0", forRemoval = true)
     @GetMapping("/{userId}/bars/{symbol}")
     public ResponseEntity<ApiResponse<List<StockBarDto>>> getBars(
             @PathVariable Long userId,
@@ -91,94 +45,14 @@ public class MarketDataController {
             @RequestParam(required = false) String end,
             @RequestParam(defaultValue = "100") Integer limit
     ) {
+        log.warn("Deprecated endpoint /api/v1/market-data/{}/bars/{} called. " +
+                "Use /api/v1/bars/{}/{}/historical instead.", userId, symbol, userId, symbol);
+
         ZonedDateTime startTime = start != null ? ZonedDateTime.parse(start) : ZonedDateTime.now().minusDays(30);
         ZonedDateTime endTime = end != null ? ZonedDateTime.parse(end) : ZonedDateTime.now();
-        
+
         List<StockBarDto> bars = marketDataService.getHistoricalBars(
                 userId, symbol, timeframe, period, startTime, endTime, limit);
         return ResponseEntity.ok(ApiResponse.success(bars));
-    }
-
-    /**
-     * Gets a complete market data snapshot.
-     */
-    @GetMapping("/{userId}/snapshot")
-    public ResponseEntity<ApiResponse<MarketDataSnapshot>> getSnapshot(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        MarketDataSnapshot snapshot = marketDataService.getMarketDataSnapshot(userId, symbols);
-        return ResponseEntity.ok(ApiResponse.success(snapshot));
-    }
-
-    /**
-     * Gets snapshot asynchronously.
-     */
-    @GetMapping("/{userId}/snapshot/async")
-    public CompletableFuture<ResponseEntity<ApiResponse<MarketDataSnapshot>>> getSnapshotAsync(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        return marketDataService.getMarketDataSnapshotAsync(userId, symbols)
-                .thenApply(snapshot -> ResponseEntity.ok(ApiResponse.success(snapshot)));
-    }
-
-    // ==================== Polling Workflows ====================
-
-    /**
-     * Starts market data polling workflow.
-     */
-    @PostMapping("/{userId}/polling/start")
-    public ResponseEntity<ApiResponse<String>> startPolling(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols,
-            @RequestParam(defaultValue = "5") int intervalSeconds
-    ) {
-        log.info("Starting market data polling for user {} symbols: {}", userId, symbols);
-        String workflowId = workflowService.startMarketDataPolling(userId, symbols, intervalSeconds);
-        return ResponseEntity.ok(ApiResponse.success(workflowId, "Polling started"));
-    }
-
-    /**
-     * Adds symbols to polling.
-     */
-    @PostMapping("/{userId}/polling/symbols")
-    public ResponseEntity<ApiResponse<Void>> addSymbolsToPolling(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        workflowService.addSymbolsToPolling(userId, symbols);
-        return ResponseEntity.ok(ApiResponse.success("Symbols added to polling"));
-    }
-
-    /**
-     * Removes symbols from polling.
-     */
-    @DeleteMapping("/{userId}/polling/symbols")
-    public ResponseEntity<ApiResponse<Void>> removeSymbolsFromPolling(
-            @PathVariable Long userId,
-            @RequestParam Set<String> symbols
-    ) {
-        workflowService.removeSymbolsFromPolling(userId, symbols);
-        return ResponseEntity.ok(ApiResponse.success("Symbols removed from polling"));
-    }
-
-    /**
-     * Gets latest quotes from polling workflow.
-     */
-    @GetMapping("/{userId}/polling/quotes")
-    public ResponseEntity<ApiResponse<List<StockQuoteDto>>> getPollingQuotes(@PathVariable Long userId) {
-        List<StockQuoteDto> quotes = workflowService.getLatestQuotesFromPolling(userId);
-        return ResponseEntity.ok(ApiResponse.success(quotes));
-    }
-
-    /**
-     * Stops polling workflow.
-     */
-    @PostMapping("/{userId}/polling/stop")
-    public ResponseEntity<ApiResponse<Void>> stopPolling(@PathVariable Long userId) {
-        log.info("Stopping market data polling for user {}", userId);
-        workflowService.stopMarketDataPolling(userId);
-        return ResponseEntity.ok(ApiResponse.success("Polling stopped"));
     }
 }
