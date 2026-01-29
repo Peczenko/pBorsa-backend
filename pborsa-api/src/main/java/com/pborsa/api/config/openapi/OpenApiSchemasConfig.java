@@ -41,6 +41,7 @@ public class OpenApiSchemasConfig {
             register(components, StockBarMapResponseDoc.class);
             register(components, StockBarListResponseDoc.class);
             register(components, StockBarResponseDoc.class);
+            register(components, BarDataConfigResponseDoc.class);
         };
     }
 
