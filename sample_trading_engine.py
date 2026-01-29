@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Sample trading engine gRPC server:
-- ExecuteStrategy: receives header + bar batches (OHLCV), saves header to JSON and bars to JSONL
+- ExecuteStrategy: receives header + bar batches (OHLCV)
 - SendLiveBars: receives periodic live bar updates from pBorsa API
 - NotifyOrderStatusUpdate: receives order status updates from pBorsa API
 
@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 from concurrent import futures
 
@@ -27,10 +26,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("trading-engine-server")
 
-HEADER_PATH = "received_header.json"
-BARS_PATH = "received_bars.jsonl"
-LIVE_BARS_PATH = "received_live_bars.jsonl"
-
 
 class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
     def ExecuteStrategy(self, request_iterator, context):
@@ -40,54 +35,26 @@ class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
         for chunk in request_iterator:
             if chunk.HasField("header"):
                 header = chunk.header
-
-                header_obj = {
-                    "executionId": header.execution_id,
-                    "userId": header.user_id,
-                    "strategyId": header.strategy_id,
-                    "symbol": header.symbol,
-                    "timeframe": header.timeframe,
-                    "start": header.start.ToDatetime().isoformat(),
-                    "end": header.end.ToDatetime().isoformat(),
-                }
-
-                with open(HEADER_PATH, "w", encoding="utf-8") as hf:
-                    json.dump(header_obj, hf, indent=2)
-
-                logger.info("Received strategy execution header: %s", header.execution_id)
-                logger.info("Header saved to %s", HEADER_PATH)
+                logger.info(
+                    "Received strategy execution header: executionId=%s userId=%d strategyId=%d symbol=%s",
+                    header.execution_id,
+                    header.user_id,
+                    header.strategy_id,
+                    header.symbol,
+                )
 
             elif chunk.HasField("bar_batch"):
                 bars = chunk.bar_batch.bars
                 total_bars += len(bars)
-
                 logger.info(
                     "Received batch of %d bars (total=%d)", len(bars), total_bars
                 )
 
-                with open(BARS_PATH, "a", encoding="utf-8") as bf:
-                    for bar in bars:
-                        bf.write(
-                            json.dumps(
-                                {
-                                    "executionId": header.execution_id if header else "",
-                                    "symbol": header.symbol if header else "",
-                                    "timestamp": bar.timestamp.ToDatetime().isoformat(),
-                                    "open": bar.open,
-                                    "high": bar.high,
-                                    "low": bar.low,
-                                    "close": bar.close,
-                                    "volume": bar.volume,
-                                    "tradeCount": bar.trade_count,
-                                    "vwap": bar.vwap,
-                                }
-                            )
-                            + "\n"
-                        )
-
         msg = f"Received {total_bars} bars" + (
             f" for {header.execution_id}" if header else ""
         )
+        logger.info("ExecuteStrategy completed: %s", msg)
+
         return pb2.ExecutionAck(
             accepted=True,
             message=msg,
@@ -107,28 +74,17 @@ class TradingEngineService(pb2_grpc.TradingEngineServiceServicer):
             update_time,
         )
 
-        with open(LIVE_BARS_PATH, "a", encoding="utf-8") as lf:
-            for symbol_bar in bars:
-                bar = symbol_bar.bar
-                lf.write(
-                    json.dumps(
-                        {
-                            "updateTime": update_time,
-                            "symbol": symbol_bar.symbol,
-                            "timeframe": symbol_bar.timeframe,
-                            "strategyIds": strategy_ids,
-                            "timestamp": bar.timestamp.ToDatetime().isoformat(),
-                            "open": bar.open,
-                            "high": bar.high,
-                            "low": bar.low,
-                            "close": bar.close,
-                            "volume": bar.volume,
-                            "tradeCount": bar.trade_count,
-                            "vwap": bar.vwap,
-                        }
-                    )
-                    + "\n"
-                )
+        for symbol_bar in bars:
+            bar = symbol_bar.bar
+            logger.debug(
+                "  %s: O=%.2f H=%.2f L=%.2f C=%.2f V=%d",
+                symbol_bar.symbol,
+                bar.open,
+                bar.high,
+                bar.low,
+                bar.close,
+                bar.volume,
+            )
 
         return pb2.LiveBarUpdateAck(
             received=True,
