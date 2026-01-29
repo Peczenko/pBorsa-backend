@@ -11,6 +11,7 @@ import com.pborsa.api.exception.StrategyExecutionException;
 import com.pborsa.api.repository.UserStrategyRepository;
 import com.pborsa.api.service.mapper.UserStrategyMapper;
 import com.pborsa.api.service.trading.AccountService;
+import com.pborsa.api.service.trading.AssetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,6 +39,7 @@ public class UserStrategyService {
     private final UserStrategyMapper userStrategyMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final AccountService accountService;
+    private final AssetService assetService;
 
     /**
      * Gets all strategies for a user.
@@ -111,6 +113,9 @@ public class UserStrategyService {
             throw new IllegalArgumentException("You already have this strategy for symbol: " + symbol);
         }
 
+        // Validate symbol is tradeable on Alpaca
+        validateSymbolTradeable(userId, symbol);
+
         validateBudgetSufficientBuyingPower(userId, request);
 
         // Create the user strategy
@@ -127,6 +132,11 @@ public class UserStrategyService {
                 saved.getId(), userId, code, symbol);
 
         return userStrategyMapper.toUserStrategyDto(saved);
+    }
+
+    private void validateSymbolTradeable(Long userId, String symbol) {
+        log.debug("Validating symbol {} is tradeable for user {}", symbol, userId);
+        assetService.validateSymbolTradeable(userId, symbol);
     }
 
     private void validateBudgetSufficientBuyingPower(Long userId, CreateUserStrategyRequest request) {
