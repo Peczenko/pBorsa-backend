@@ -1,18 +1,6 @@
 package com.pborsa.api.config.openapi;
 
-import com.pborsa.api.config.openapi.model.AdminStatusResponseDoc;
-import com.pborsa.api.config.openapi.model.ApiErrorResponseDoc;
-import com.pborsa.api.config.openapi.model.ApiErrorResponseDocBase;
-import com.pborsa.api.config.openapi.model.ApiSuccessResponseDocBase;
-import com.pborsa.api.config.openapi.model.BaseStrategyListResponseDoc;
-import com.pborsa.api.config.openapi.model.BaseStrategyResponseDoc;
-import com.pborsa.api.config.openapi.model.OrderDetailListResponseDoc;
-import com.pborsa.api.config.openapi.model.OrderDetailResponseDoc;
-import com.pborsa.api.config.openapi.model.OrderHistoryListResponseDoc;
-import com.pborsa.api.config.openapi.model.OrderHistoryResponseDoc;
-import com.pborsa.api.config.openapi.model.UserProfileResponseDoc;
-import com.pborsa.api.config.openapi.model.UserStrategyListResponseDoc;
-import com.pborsa.api.config.openapi.model.UserStrategyResponseDoc;
+import com.pborsa.api.config.openapi.model.*;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.core.converter.ResolvedSchema;
@@ -50,6 +38,9 @@ public class OpenApiSchemasConfig {
             register(components, BaseStrategyListResponseDoc.class);
             register(components, UserStrategyResponseDoc.class);
             register(components, UserStrategyListResponseDoc.class);
+            register(components, StockBarMapResponseDoc.class);
+            register(components, StockBarListResponseDoc.class);
+            register(components, StockBarResponseDoc.class);
         };
     }
 
