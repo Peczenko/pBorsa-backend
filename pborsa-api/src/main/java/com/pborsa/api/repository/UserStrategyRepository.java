@@ -81,6 +81,17 @@ public interface UserStrategyRepository extends JpaRepository<UserStrategyEntity
      */
     @Query("SELECT us.symbol, us.id FROM UserStrategyEntity us WHERE us.status = 'ACTIVE'")
     List<Object[]> findActiveSymbolsWithStrategyIds();
+
+    /**
+     * Checks if a user has any strategies in ACTIVE or PREPARING status.
+     * Used to prevent credential changes while strategies are running.
+     *
+     * @param userId User ID
+     * @return true if user has active or preparing strategies
+     */
+    @Query("SELECT CASE WHEN COUNT(us) > 0 THEN true ELSE false END " +
+            "FROM UserStrategyEntity us WHERE us.userId = :userId AND us.status IN ('ACTIVE', 'PREPARING')")
+    boolean hasActiveOrPreparingStrategies(Long userId);
 }
 
 

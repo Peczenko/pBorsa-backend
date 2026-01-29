@@ -5,12 +5,13 @@ import com.pborsa.api.domain.dto.credentials.AlpacaCredentialsDto;
 import com.pborsa.api.domain.dto.credentials.CredentialsRegistrationRequest;
 import com.pborsa.api.domain.event.CredentialsChangedEvent;
 import com.pborsa.api.domain.entity.UserApiCredentials;
+import com.pborsa.api.exception.ActiveStrategiesExistException;
 import com.pborsa.api.exception.CredentialsNotFoundException;
 import com.pborsa.api.repository.UserApiCredentialsRepository;
 import com.pborsa.api.service.alpaca.AlpacaClientFactory;
 import com.pborsa.api.service.encryption.EncryptionService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -26,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
  * Handles secure storage, retrieval, and caching of credentials.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class UserCredentialsService {
 
@@ -34,6 +34,24 @@ public class UserCredentialsService {
     private final EncryptionService encryptionService;
     private final AlpacaClientFactory alpacaClientFactory;
     private final ApplicationEventPublisher eventPublisher;
+    private final ActiveStrategyChecker activeStrategyChecker;
+
+    @Autowired
+    public UserCredentialsService(
+            UserApiCredentialsRepository credentialsRepository,
+            EncryptionService encryptionService,
+            AlpacaClientFactory alpacaClientFactory,
+            ApplicationEventPublisher eventPublisher,
+            @Autowired(required = false) ActiveStrategyChecker activeStrategyChecker) {
+        this.credentialsRepository = credentialsRepository;
+        this.encryptionService = encryptionService;
+        this.alpacaClientFactory = alpacaClientFactory;
+        this.eventPublisher = eventPublisher;
+        // Use no-op implementation if not provided (e.g., in tests or standalone usage)
+        this.activeStrategyChecker = activeStrategyChecker != null
+                ? activeStrategyChecker
+                : userId -> false;
+    }
 
     /**
      * Retrieves decrypted credentials for a user.
@@ -80,6 +98,9 @@ public class UserCredentialsService {
     public boolean registerCredentials(Long userId, CredentialsRegistrationRequest request) {
         log.info("Registering credentials for user: {}", userId);
 
+        // Check if user has active strategies before allowing credential changes
+        validateNoActiveStrategies(userId);
+
         // Create temporary credentials for validation
         AlpacaCredentialsDto tempCredentials = AlpacaCredentialsDto.builder()
                 .userId(userId)
@@ -123,9 +144,27 @@ public class UserCredentialsService {
     @Transactional
     public void deactivateCredentials(Long userId) {
         log.info("Deactivating credentials for user: {}", userId);
+
+        // Check if user has active strategies before allowing credential deactivation
+        validateNoActiveStrategies(userId);
+
         credentialsRepository.deactivateByUserId(userId);
         alpacaClientFactory.evictClient(userId);
         eventPublisher.publishEvent(new CredentialsChangedEvent(userId, false));
+    }
+
+    /**
+     * Validates that the user has no active or preparing strategies.
+     * Throws exception if active strategies exist.
+     *
+     * @param userId User ID
+     * @throws ActiveStrategiesExistException if user has active strategies
+     */
+    private void validateNoActiveStrategies(Long userId) {
+        if (activeStrategyChecker.hasActiveStrategies(userId)) {
+            log.warn("Cannot modify credentials for user {}: active strategies exist", userId);
+            throw new ActiveStrategiesExistException(userId);
+        }
     }
 
     /**
