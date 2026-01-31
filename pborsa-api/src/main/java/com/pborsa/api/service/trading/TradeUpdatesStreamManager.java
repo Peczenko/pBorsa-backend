@@ -51,12 +51,37 @@ public class TradeUpdatesStreamManager {
         this.orderUpdateQueueManager = orderUpdateQueueManager;
     }
 
-    public void ensureStream(Long userId) {
+    /**
+     * Ensures a connected trade updates stream exists for the user.
+     * If the stream is disconnected, it will be reconnected immediately.
+     *
+     * @return true if stream is connected and ready, false otherwise
+     */
+    public boolean ensureStream(Long userId) {
         if (userId == null) {
             log.warn("Skipping trade updates stream for null userId");
-            return;
+            return false;
         }
-        streams.computeIfAbsent(userId, this::startStream);
+
+        StreamState existing = streams.get(userId);
+
+        // If stream exists but is disconnected, reconnect immediately
+        if (existing != null) {
+            if (existing.stream.isConnected()) {
+                return true;
+            }
+            log.info("Stream exists but disconnected for user {}, reconnecting", userId);
+            reconnect(userId, existing);
+            return existing.stream.isConnected();
+        }
+
+        // No stream exists, create new one
+        StreamState newState = startStream(userId);
+        if (newState != null) {
+            streams.put(userId, newState);
+            return true;
+        }
+        return false;
     }
 
     public void stopStream(Long userId) {

@@ -1,7 +1,6 @@
 package com.pborsa.api.service.trading;
 
 import com.pborsa.api.domain.dto.trading.OrderResponse;
-import com.pborsa.api.domain.dto.trading.OrderStatus;
 import com.pborsa.api.domain.entity.OrderEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,6 @@ import java.util.Map;
 public class OrderReconciliationProcessor {
 
     private static final String MESSAGE_STATUS_CHANGE = "reconcile_status_change";
-    private static final String MESSAGE_NO_CHANGE_CLOSE = "reconcile_no_change_close";
 
     private final OrderService orderService;
     private final OrderPersistenceService orderPersistenceService;
@@ -59,33 +57,7 @@ public class OrderReconciliationProcessor {
                         remote.status(),
                         MESSAGE_STATUS_CHANGE
                 );
-                continue;
             }
-
-            if (shouldClose(remote.status())) {
-                closeRemoteOrder(userId, remote);
-            }
-        }
-    }
-
-    private void closeRemoteOrder(Long userId, OrderResponse remote) {
-        if (remote.orderId() == null || remote.orderId().isBlank()) {
-            log.debug("Reconcile close skipped, missing alpaca order id for user {}", userId);
-            return;
-        }
-        try {
-            boolean cancelled = orderService.cancelOrder(userId, remote.orderId());
-            if (cancelled) {
-                orderPersistenceService.updateStatusByExternalIds(
-                        remote.orderId(),
-                        remote.clientOrderId(),
-                        OrderStatus.CANCEL_REQUESTED,
-                        MESSAGE_NO_CHANGE_CLOSE
-                );
-                log.info("Reconcile closed order user={} alpacaOrderId={}", userId, remote.orderId());
-            }
-        } catch (Exception e) {
-            log.warn("Failed to close stale order user={} alpacaOrderId={}", userId, remote.orderId(), e);
         }
     }
 
@@ -111,12 +83,5 @@ public class OrderReconciliationProcessor {
             return byExternalId.get(entity.getClientOrderId());
         }
         return null;
-    }
-
-    private boolean shouldClose(OrderStatus status) {
-        return status != null && switch (status) {
-            case FILLED, CANCELED, EXPIRED, REJECTED, DONE_FOR_DAY -> false;
-            default -> true;
-        };
     }
 }

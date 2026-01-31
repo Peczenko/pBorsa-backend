@@ -49,7 +49,14 @@ public class OrderExecutionService {
 
         String workflowId = generateTradeWorkflowId(userId);
         OrderEntity pending = orderPersistenceService.createNewOrder(userId, request, workflowId);
-        tradeUpdatesStreamManager.ensureStream(userId);
+
+        // Ensure WebSocket stream is connected before submitting order
+        boolean streamReady = tradeUpdatesStreamManager.ensureStream(userId);
+        if (!streamReady) {
+            log.warn("Trade updates stream not ready for user {}, order {} will rely on reconciliation",
+                    userId, pending.getId());
+        }
+
         tradingExecutor.execute(() -> startWorkflow(userId, pending.getId(), request, workflowId));
 
         log.info("Order execution accepted for user {}, workflowId={}, orderId={}", userId, workflowId, pending.getId());
