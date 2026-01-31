@@ -28,9 +28,14 @@ public class TemporalWorkersConfiguration {
     @Value("${temporal.workers.strategy.max-concurrent-workflows:25}")
     private int strategyMaxConcurrentWorkflows;
 
+    @Value("${temporal.workers.backtest.max-concurrent-activities:10}")
+    private int backtestMaxConcurrentActivities;
+
+    @Value("${temporal.workers.backtest.max-concurrent-workflows:10}")
+    private int backtestMaxConcurrentWorkflows;
+
     /**
      * Worker for strategy execution task queue.
-     * Add more @Bean workers here as new workflows/queues are introduced.
      */
     @Bean
     public Worker strategyExecutionWorker() {
@@ -45,5 +50,23 @@ public class TemporalWorkersConfiguration {
                 .build();
 
         return workerFactory.newWorker(TaskQueues.STRATEGY_EXECUTION_TASK_QUEUE, options);
+    }
+
+    /**
+     * Worker for backtest execution task queue.
+     */
+    @Bean
+    public Worker backtestExecutionWorker() {
+        log.info("Creating backtest execution worker for queue: {} with max concurrent activities: {}, workflows: {}",
+                TaskQueues.BACKTEST_TASK_QUEUE, backtestMaxConcurrentActivities, backtestMaxConcurrentWorkflows);
+
+        WorkerOptions options = WorkerOptions.newBuilder()
+                .setMaxConcurrentWorkflowTaskPollers(2)
+                .setMaxConcurrentActivityTaskPollers(2)
+                .setMaxConcurrentActivityExecutionSize(backtestMaxConcurrentActivities)
+                .setMaxConcurrentWorkflowTaskExecutionSize(backtestMaxConcurrentWorkflows)
+                .build();
+
+        return workerFactory.newWorker(TaskQueues.BACKTEST_TASK_QUEUE, options);
     }
 }

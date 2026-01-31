@@ -20,6 +20,9 @@ service TradingEngineService {
 
   // API calls this when strategy status changes (e.g., strategy stopped)
   rpc NotifyStrategyStatusUpdate(StrategyStatusNotification) returns (StrategyStatusNotificationAck);
+
+  // Execute a backtest against historical data
+  rpc ExecuteBacktest(BacktestRequest) returns (BacktestResponse);
 }
 
 // Accepts trading/order requests (gRPC path into pBorsa API).
@@ -220,4 +223,37 @@ message StrategyStatusNotification {
 message StrategyStatusNotificationAck {
   bool received = 1;
   string message = 2;
+}
+
+// ===================== Backtesting =====================
+
+message BacktestRequest {
+  string backtest_id = 1;
+  int64 user_id = 2;
+  string symbol = 3;
+  string base_strategy_code = 4;
+  google.protobuf.Timestamp testing_start = 5;
+  google.protobuf.Timestamp testing_end = 6;
+  double budget = 7;
+  repeated Bar history_before_start = 8;  // Historical context before testing period
+  repeated Bar history_testing_range = 9; // Data for actual testing
+}
+
+message BacktestOrder {
+  string symbol = 1;
+  double quantity = 2;
+  OrderSide side = 3;
+  double price = 4;
+  google.protobuf.Timestamp executed_at = 5;
+}
+
+message BacktestResponse {
+  string backtest_id = 1;
+  bool success = 2;
+  string message = 3;
+  repeated BacktestOrder orders = 4;
+  double pnl = 5;
+  double max_drawdown = 6;
+  int32 total_trades = 7;
+  int32 winning_trades = 8;
 }

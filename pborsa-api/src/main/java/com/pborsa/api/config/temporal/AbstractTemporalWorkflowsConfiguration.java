@@ -1,5 +1,6 @@
 package com.pborsa.api.config.temporal;
 
+import com.pborsa.api.temporal.workflow.BacktestExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
 import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflow;
@@ -55,5 +56,13 @@ public abstract class AbstractTemporalWorkflowsConfiguration {
     @Bean
     public Function<String, StrategyExecutionWorkflow> strategyExecutionWorkflowProvider() {
         return createWorkflowProvider(StrategyExecutionWorkflow.class);
+    }
+
+    /**
+     * Creates a provider bean for BacktestExecutionWorkflow.
+     */
+    @Bean
+    public Function<String, BacktestExecutionWorkflow> backtestExecutionWorkflowProvider() {
+        return createWorkflowProvider(BacktestExecutionWorkflow.class);
     }
 }

@@ -1,8 +1,10 @@
 package com.pborsa.api.config.temporal;
 
+import com.pborsa.api.temporal.activity.BacktestActivitiesImpl;
 import com.pborsa.api.temporal.activity.OrderStatusUpdateActivitiesImpl;
 import com.pborsa.api.temporal.activity.StrategyExecutionActivitiesImpl;
 import com.pborsa.api.temporal.config.TaskQueues;
+import com.pborsa.api.temporal.workflow.BacktestExecutionWorkflowImpl;
 import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflowImpl;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
@@ -26,8 +28,10 @@ public class WorkerRegistration {
 
     private final WorkerFactory workerFactory;
     private final Worker strategyExecutionWorker;
+    private final Worker backtestExecutionWorker;
     private final StrategyExecutionActivitiesImpl activitiesImpl;
     private final OrderStatusUpdateActivitiesImpl orderStatusUpdateActivities;
+    private final BacktestActivitiesImpl backtestActivitiesImpl;
 
     @PostConstruct
     public void register() {
@@ -35,8 +39,12 @@ public class WorkerRegistration {
         strategyExecutionWorker.registerWorkflowImplementationTypes(StrategyExecutionWorkflowImpl.class);
         strategyExecutionWorker.registerActivitiesImplementations(activitiesImpl, orderStatusUpdateActivities);
 
+        log.info("Registering backtest execution workflow and activities on queue {}", TaskQueues.BACKTEST_TASK_QUEUE);
+        backtestExecutionWorker.registerWorkflowImplementationTypes(BacktestExecutionWorkflowImpl.class);
+        backtestExecutionWorker.registerActivitiesImplementations(backtestActivitiesImpl);
+
         workerFactory.start();
-        log.info("Strategy execution Temporal worker started");
+        log.info("Temporal workers started");
     }
 
     @PreDestroy

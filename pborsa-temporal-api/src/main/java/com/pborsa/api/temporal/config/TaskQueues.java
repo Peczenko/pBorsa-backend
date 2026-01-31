@@ -9,6 +9,7 @@ public final class TaskQueues {
     public static final String TRADING_TASK_QUEUE = "TRADING_TASK_QUEUE";
     public static final String MARKET_DATA_TASK_QUEUE = "MARKET_DATA_TASK_QUEUE";
     public static final String STRATEGY_EXECUTION_TASK_QUEUE = "STRATEGY_EXECUTION_TASK_QUEUE";
+    public static final String BACKTEST_TASK_QUEUE = "BACKTEST_TASK_QUEUE";
     
     private TaskQueues() {
         // Utility class

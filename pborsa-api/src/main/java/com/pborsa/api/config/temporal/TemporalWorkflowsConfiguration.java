@@ -1,6 +1,7 @@
 package com.pborsa.api.config.temporal;
 
 import com.pborsa.api.temporal.config.TaskQueues;
+import com.pborsa.api.temporal.workflow.BacktestExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.BatchTradeExecutionWorkflow;
 import com.pborsa.api.temporal.workflow.MarketDataPollingWorkflow;
 import com.pborsa.api.temporal.workflow.StrategyExecutionWorkflow;
@@ -38,6 +39,9 @@ public class TemporalWorkflowsConfiguration extends AbstractTemporalWorkflowsCon
             if (StrategyExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
                 executionTimeout = Duration.ofHours(6);
                 runTimeout = Duration.ofHours(6);
+            } else if (BacktestExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
+                executionTimeout = Duration.ofHours(2);
+                runTimeout = Duration.ofHours(2);
             }
 
             WorkflowOptions options = WorkflowOptions.newBuilder()
@@ -63,6 +67,8 @@ public class TemporalWorkflowsConfiguration extends AbstractTemporalWorkflowsCon
             return TaskQueues.MARKET_DATA_TASK_QUEUE;
         } else if (StrategyExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
             return TaskQueues.STRATEGY_EXECUTION_TASK_QUEUE;
+        } else if (BacktestExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
+            return TaskQueues.BACKTEST_TASK_QUEUE;
         }
         // Default to trading queue
         return TaskQueues.TRADING_TASK_QUEUE;

@@ -1,8 +1,11 @@
 package com.pborsa.api.config.tradingengine;
 
+import com.pborsa.api.client.tradingengine.BacktestClient;
+import com.pborsa.api.client.tradingengine.GrpcBacktestClient;
 import com.pborsa.api.client.tradingengine.GrpcLiveBarClient;
 import com.pborsa.api.client.tradingengine.GrpcTradingEngineClient;
 import com.pborsa.api.client.tradingengine.LiveBarClient;
+import com.pborsa.api.client.tradingengine.NoopBacktestClient;
 import com.pborsa.api.client.tradingengine.NoopLiveBarClient;
 import com.pborsa.api.client.tradingengine.NoopTradingEngineClient;
 import com.pborsa.api.client.tradingengine.TradingEngineClient;
@@ -41,6 +44,17 @@ public class TradingEngineClientConfiguration {
         String target = normalizeTarget(properties.getAddress());
         log.info("Creating live bar gRPC client targeting {}", target);
         return new GrpcLiveBarClient(target);
+    }
+
+    @Bean
+    public BacktestClient backtestClient() {
+        if (!properties.isEnabled()) {
+            log.info("Backtest gRPC client disabled via configuration.");
+            return new NoopBacktestClient();
+        }
+        String target = normalizeTarget(properties.getAddress());
+        log.info("Creating backtest gRPC client targeting {}", target);
+        return new GrpcBacktestClient(target);
     }
 
     private String normalizeTarget(String address) {
