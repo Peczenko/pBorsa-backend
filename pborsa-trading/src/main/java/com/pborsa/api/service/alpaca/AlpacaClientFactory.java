@@ -86,7 +86,7 @@ public class AlpacaClientFactory {
      *
      * @param userId The user ID (or SystemConstants.SYSTEM_USER_ID for system) whose client should be evicted
      */
-    @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
+    @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId", cacheManager = "apiCredentialsCacheManager")
     public void evictClient(Long userId) {
         log.info("Evicted Alpaca API client from cache for user: {}", userId);
     }
@@ -95,7 +95,7 @@ public class AlpacaClientFactory {
      * Evicts all cached clients.
      * Should be used sparingly, mainly for system maintenance.
      */
-    @CacheEvict(value = CacheNames.ALPACA_CLIENTS, allEntries = true)
+    @CacheEvict(value = CacheNames.ALPACA_CLIENTS, allEntries = true, cacheManager = "apiCredentialsCacheManager")
     public void evictAllClients() {
         log.info("Evicted all Alpaca API clients from cache");
     }

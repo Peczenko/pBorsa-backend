@@ -74,8 +74,8 @@ public class SystemCredentialsService {
      * @return true if credentials are valid and saved
      */
     @Caching(evict = {
-            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID"),
-            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID")
+            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID", cacheManager = "apiCredentialsCacheManager"),
+            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID", cacheManager = "apiCredentialsCacheManager")
     })
     @Transactional
     public boolean registerCredentials(CredentialsRegistrationRequest request) {
@@ -118,8 +118,8 @@ public class SystemCredentialsService {
      * Deactivates system credentials.
      */
     @Caching(evict = {
-            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID"),
-            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID")
+            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID", cacheManager = "apiCredentialsCacheManager"),
+            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID", cacheManager = "apiCredentialsCacheManager")
     })
     @Transactional
     public void deactivateCredentials() {
@@ -147,7 +147,7 @@ public class SystemCredentialsService {
      *
      * @return Updated credentials
      */
-    @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID")
+    @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "T(com.pborsa.api.domain.constants.SystemConstants).SYSTEM_USER_ID", cacheManager = "apiCredentialsCacheManager")
     @Transactional(readOnly = true)
     public AlpacaCredentialsDto refreshCredentials() {
         log.debug("Refreshing system credentials cache");

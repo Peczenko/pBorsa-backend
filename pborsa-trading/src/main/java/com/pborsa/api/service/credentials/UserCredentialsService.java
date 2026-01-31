@@ -91,8 +91,8 @@ public class UserCredentialsService {
      * @return true if credentials are valid and saved
      */
     @Caching(evict = {
-            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId"),
-            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
+            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId", cacheManager = "apiCredentialsCacheManager"),
+            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId", cacheManager = "apiCredentialsCacheManager")
     })
     @Transactional
     public boolean registerCredentials(Long userId, CredentialsRegistrationRequest request) {
@@ -125,8 +125,8 @@ public class UserCredentialsService {
         entity.setActive(true);
 
         credentialsRepository.save(entity);
-        log.info("Successfully registered credentials for user: {}", userId);
 
+        log.info("Successfully registered credentials for user: {}", userId);
         eventPublisher.publishEvent(new CredentialsChangedEvent(userId, true));
         
         return true;
@@ -138,8 +138,8 @@ public class UserCredentialsService {
      * @param userId The user ID
      */
     @Caching(evict = {
-            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId"),
-            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId")
+            @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId", cacheManager = "apiCredentialsCacheManager"),
+            @CacheEvict(value = CacheNames.ALPACA_CLIENTS, key = "#userId", cacheManager = "apiCredentialsCacheManager")
     })
     @Transactional
     public void deactivateCredentials(Long userId) {
@@ -186,7 +186,7 @@ public class UserCredentialsService {
      * @param userId The user ID
      * @return Updated credentials
      */
-    @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId")
+    @CacheEvict(value = CacheNames.API_CREDENTIALS, key = "#userId", cacheManager = "apiCredentialsCacheManager")
     @Transactional(readOnly = true)
     public AlpacaCredentialsDto refreshCredentials(Long userId) {
         log.debug("Refreshing credentials cache for user: {}", userId);
