@@ -36,6 +36,7 @@ message StrategyExecutionHeader {
   string timeframe = 5;
   google.protobuf.Timestamp start = 6;
   google.protobuf.Timestamp end = 7;
+  double budget = 8;                    // Strategy budget allocation
 }
 
 message Bar {
@@ -170,18 +171,24 @@ message OrderStatusUpdate {
   string workflow_id = 2;           // Optional
   string client_order_id = 3;       // Required - used to route to correct trading engine
   string alpaca_order_id = 4;       // Optional
-  
+
   // Status information
   OrderStatus status = 5;
   OrderStatusReason reason = 6;     // Optional
   string message = 7;               // Optional
-  
+
   // Timestamps
   google.protobuf.Timestamp updated_at = 8;
   google.protobuf.Timestamp created_at = 9;  // Order creation time
-  
+
   // Resume token for reconnection (UUID string of order_history.id)
   string resume_token = 10;
+
+  // Fill information (available when status is FILLED or PARTIALLY_FILLED)
+  string symbol = 11;               // Trading symbol
+  OrderSide side = 12;              // BUY or SELL
+  double filled_quantity = 13;      // Actual filled quantity
+  double filled_avg_price = 14;     // Average fill price
 }
 
 message OrderStatusUpdateAck {

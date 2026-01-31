@@ -50,15 +50,37 @@ public class OrderReconciliationProcessor {
                 continue;
             }
 
-            if (remote.status() != entity.getStatus()) {
+            // Check if status changed or fill data needs updating
+            boolean statusChanged = remote.status() != entity.getStatus();
+            boolean needsFillDataUpdate = needsFillDataUpdate(entity, remote);
+
+            if (statusChanged || needsFillDataUpdate) {
                 orderPersistenceService.updateStatusByExternalIds(
                         remote.orderId(),
                         remote.clientOrderId(),
                         remote.status(),
-                        MESSAGE_STATUS_CHANGE
+                        MESSAGE_STATUS_CHANGE,
+                        null,  // reason
+                        remote // pass fill data from remote order
                 );
             }
         }
+    }
+
+    private boolean needsFillDataUpdate(OrderEntity entity, OrderResponse remote) {
+        // Update if we have new fill data from Alpaca that we don't have locally
+        if (remote.filledQuantity() != null && entity.getFilledQuantity() == null) {
+            return true;
+        }
+        if (remote.filledAveragePrice() != null && entity.getFilledAvgPrice() == null) {
+            return true;
+        }
+        // Also update if remote fill data is different (e.g., partial fill progression)
+        if (remote.filledQuantity() != null && entity.getFilledQuantity() != null
+                && remote.filledQuantity().compareTo(entity.getFilledQuantity()) != 0) {
+            return true;
+        }
+        return false;
     }
 
     private void indexOrders(Map<String, OrderResponse> target, List<OrderResponse> orders) {

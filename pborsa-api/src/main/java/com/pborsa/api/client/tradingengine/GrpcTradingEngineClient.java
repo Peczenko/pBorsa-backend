@@ -96,14 +96,17 @@ public class GrpcTradingEngineClient implements TradingEngineClient, AutoCloseab
     }
 
     private StrategyExecutionHeader toHeader(StrategyExecutionContext context) {
-        return StrategyExecutionHeader.newBuilder()
+        StrategyExecutionHeader.Builder builder = StrategyExecutionHeader.newBuilder()
                 .setExecutionId(context.executionId())
                 .setUserId(context.userId())
                 .setStrategyId(context.strategyId())
                 .setSymbol(context.symbol())
                 .setStart(toTimestamp(context.start()))
-                .setEnd(toTimestamp(context.end()))
-                .build();
+                .setEnd(toTimestamp(context.end()));
+        if (context.budget() != null) {
+            builder.setBudget(context.budget().doubleValue());
+        }
+        return builder.build();
     }
 
     private static Bar toProtoBar(StockBarDto bar) {

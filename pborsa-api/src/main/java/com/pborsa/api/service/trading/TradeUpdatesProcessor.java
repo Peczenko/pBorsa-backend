@@ -30,15 +30,22 @@ public class TradeUpdatesProcessor {
             return;
         }
 
+        // Convert Alpaca order to OrderResponse for fill data extraction
+        OrderResponse fillData = order != null ? orderMapper.toOrderResponse(order) : null;
+
         boolean updated = orderPersistenceService.updateStatusByExternalIds(
                 alpacaOrderId,
                 clientOrderId,
                 status,
-                message
+                message,
+                null,  // reason
+                fillData  // fill data from Alpaca
         );
         if (updated) {
-            log.info("Trade update applied user={} status={} orderId={} clientOrderId={}",
-                    userId, status, alpacaOrderId, clientOrderId);
+            log.info("Trade update applied user={} status={} orderId={} clientOrderId={} filledQty={} filledAvgPrice={}",
+                    userId, status, alpacaOrderId, clientOrderId,
+                    fillData != null ? fillData.filledQuantity() : null,
+                    fillData != null ? fillData.filledAveragePrice() : null);
         }
     }
 

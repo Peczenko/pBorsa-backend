@@ -37,10 +37,16 @@ public class OrderStatusEventPublisher {
                 order.getAlpacaOrderId(),
                 history.getId(),
                 history.getCreatedAt(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                // Fill information
+                order.getSymbol(),
+                order.getSide(),
+                order.getFilledQuantity(),
+                order.getFilledAvgPrice()
         );
         eventPublisher.publishEvent(event);
-        log.debug("Published OrderStatusUpdatedEvent for orderId={} status={}", order.getId(), status);
+        log.debug("Published OrderStatusUpdatedEvent for orderId={} status={} filledQty={} filledAvgPrice={}",
+                order.getId(), status, order.getFilledQuantity(), order.getFilledAvgPrice());
     }
 }
 

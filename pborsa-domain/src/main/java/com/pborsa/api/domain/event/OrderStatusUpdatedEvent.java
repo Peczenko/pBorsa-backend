@@ -1,8 +1,10 @@
 package com.pborsa.api.domain.event;
 
+import com.pborsa.api.domain.dto.trading.OrderSide;
 import com.pborsa.api.domain.dto.trading.OrderStatus;
 import com.pborsa.api.domain.dto.trading.OrderStatusReason;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -21,7 +23,12 @@ public record OrderStatusUpdatedEvent(
         String alpacaOrderId,
         UUID orderHistoryId,  // For resume token
         Instant updatedAt,
-        Instant orderCreatedAt
+        Instant orderCreatedAt,
+        // Fill information (available when status is FILLED or PARTIALLY_FILLED)
+        String symbol,
+        OrderSide side,
+        BigDecimal filledQuantity,
+        BigDecimal filledAvgPrice
 ) {
 }
 

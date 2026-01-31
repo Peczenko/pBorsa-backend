@@ -1,12 +1,14 @@
 package com.pborsa.api.service.mapper;
 
 import com.google.protobuf.Timestamp;
+import com.pborsa.api.domain.dto.trading.OrderSide;
 import com.pborsa.api.domain.dto.trading.OrderStatus;
 import com.pborsa.api.domain.dto.trading.OrderStatusReason;
 import com.pborsa.api.domain.event.OrderStatusUpdatedEvent;
 import com.pborsa.api.tradingengine.v1.OrderStatusUpdate;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -44,7 +46,28 @@ public class OrderStatusProtoMapper {
             builder.setMessage(event.message());
         }
 
+        // Fill information
+        if (event.symbol() != null && !event.symbol().isBlank()) {
+            builder.setSymbol(event.symbol());
+        }
+        if (event.side() != null) {
+            builder.setSide(mapOrderSide(event.side()));
+        }
+        if (event.filledQuantity() != null) {
+            builder.setFilledQuantity(event.filledQuantity().doubleValue());
+        }
+        if (event.filledAvgPrice() != null) {
+            builder.setFilledAvgPrice(event.filledAvgPrice().doubleValue());
+        }
+
         return builder.build();
+    }
+
+    private com.pborsa.api.tradingengine.v1.OrderSide mapOrderSide(OrderSide side) {
+        return switch (side) {
+            case BUY -> com.pborsa.api.tradingengine.v1.OrderSide.BUY;
+            case SELL -> com.pborsa.api.tradingengine.v1.OrderSide.SELL;
+        };
     }
 
     private com.pborsa.api.tradingengine.v1.OrderStatus mapOrderStatus(OrderStatus status) {

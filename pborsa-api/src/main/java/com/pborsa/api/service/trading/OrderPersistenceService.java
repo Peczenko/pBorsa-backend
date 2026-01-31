@@ -133,7 +133,7 @@ public class OrderPersistenceService {
                                              String clientOrderId,
                                              OrderStatus status,
                                              String message) {
-        return updateStatusByExternalIds(alpacaOrderId, clientOrderId, status, message, null);
+        return updateStatusByExternalIds(alpacaOrderId, clientOrderId, status, message, null, null);
     }
 
     public boolean updateStatusByExternalIds(String alpacaOrderId,
@@ -141,6 +141,27 @@ public class OrderPersistenceService {
                                              OrderStatus status,
                                              String message,
                                              OrderStatusReason reason) {
+        return updateStatusByExternalIds(alpacaOrderId, clientOrderId, status, message, reason, null);
+    }
+
+    /**
+     * Updates order status and optionally fill data from an OrderResponse.
+     * This is the main method for processing trade updates from Alpaca.
+     *
+     * @param alpacaOrderId Alpaca order ID
+     * @param clientOrderId Client order ID
+     * @param status        New order status
+     * @param message       Optional message
+     * @param reason        Optional status reason
+     * @param fillData      Optional fill data from Alpaca order response
+     * @return true if update was applied
+     */
+    public boolean updateStatusByExternalIds(String alpacaOrderId,
+                                             String clientOrderId,
+                                             OrderStatus status,
+                                             String message,
+                                             OrderStatusReason reason,
+                                             OrderResponse fillData) {
         Optional<OrderEntity> entity = findByExternalIds(alpacaOrderId, clientOrderId);
         if (entity.isEmpty()) {
             log.warn("Order not found for alpacaOrderId={} clientOrderId={}", alpacaOrderId, clientOrderId);
@@ -153,14 +174,30 @@ public class OrderPersistenceService {
         if (order.getClientOrderId() == null && clientOrderId != null) {
             order.setClientOrderId(clientOrderId);
         }
-        
+
+        // Update fill data if provided (from Alpaca order response)
+        if (fillData != null) {
+            if (fillData.filledQuantity() != null) {
+                order.setFilledQuantity(fillData.filledQuantity());
+            }
+            if (fillData.filledAveragePrice() != null) {
+                order.setFilledAvgPrice(fillData.filledAveragePrice());
+            }
+            if (fillData.filledAt() != null) {
+                order.setFilledAt(fillData.filledAt());
+            }
+            if (fillData.updatedAt() != null) {
+                order.setUpdatedAtRemote(fillData.updatedAt());
+            }
+        }
+
         OrderStatus currentStatus = order.getStatus();
-        
-        // Skip if status hasn't changed and no message to add
-        if (currentStatus == status && message == null) {
+
+        // Skip if status hasn't changed and no message to add and no fill data update
+        if (currentStatus == status && message == null && fillData == null) {
             return true;
         }
-        
+
         // Validate status transition - prevent updating to a "less advanced" status
         // if we've already reached a final status
         if (isFinalStatus(currentStatus) && !isFinalStatus(status)) {
@@ -172,11 +209,11 @@ public class OrderPersistenceService {
             }
             return false;
         }
-        
+
         // Allow same status updates (e.g., multiple PARTIAL_FILL updates)
         // Allow transitions to final statuses from any non-final status
         // Allow transitions between non-final statuses
-        
+
         order.setStatus(status);
         OrderEntity saved = orderRepository.save(order);
         // createOrderHistory will publish the event
