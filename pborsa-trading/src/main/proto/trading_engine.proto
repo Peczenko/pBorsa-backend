@@ -17,6 +17,9 @@ service TradingEngineService {
 
   // API calls this when order status changes
   rpc NotifyOrderStatusUpdate(OrderStatusUpdate) returns (OrderStatusUpdateAck);
+
+  // API calls this when strategy status changes (e.g., strategy stopped)
+  rpc NotifyStrategyStatusUpdate(StrategyStatusNotification) returns (StrategyStatusNotificationAck);
 }
 
 // Accepts trading/order requests (gRPC path into pBorsa API).
@@ -182,6 +185,32 @@ message OrderStatusUpdate {
 }
 
 message OrderStatusUpdateAck {
+  bool received = 1;
+  string message = 2;
+}
+
+// ===================== Strategy Status Notifications =====================
+
+enum StrategyStatus {
+  STRATEGY_STATUS_UNSPECIFIED = 0;
+  STRATEGY_CREATED = 1;
+  STRATEGY_PREPARING = 2;
+  STRATEGY_ACTIVE = 3;
+  STRATEGY_PAUSED = 4;
+  STRATEGY_STOPPED = 5;
+  STRATEGY_START_FAILED = 6;
+}
+
+message StrategyStatusNotification {
+  int64 strategy_id = 1;
+  int64 user_id = 2;
+  string symbol = 3;
+  StrategyStatus old_status = 4;
+  StrategyStatus new_status = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message StrategyStatusNotificationAck {
   bool received = 1;
   string message = 2;
 }
