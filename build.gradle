@@ -36,6 +36,7 @@ subprojects {
     dependencyManagement {
         imports {
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+            mavenBom 'org.testcontainers:testcontainers-bom:1.20.4'
         }
     }
     
@@ -43,13 +44,24 @@ subprojects {
         // Lombok
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
-        
+
         // Testing
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+        testImplementation 'org.springframework.security:spring-security-test'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+        // Lombok for tests
+        testCompileOnly 'org.projectlombok:lombok'
+        testAnnotationProcessor 'org.projectlombok:lombok'
     }
-    
-    tasks.named('test') {
+
+    tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        systemProperty "spring.profiles.active", "test"
+        maxParallelForks = 1
     }
+
 }

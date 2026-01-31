@@ -43,9 +43,17 @@ dependencies {
 
     // Firebase Admin SDK (token verification)
     implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+    // Test dependencies specific to pborsa-api (Spring Boot 4.x modular test infrastructure)
+    testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
+    testImplementation 'org.springframework.boot:spring-boot-restclient'
 }
 
 springBoot {
     mainClass = 'com.pborsa.api.PBorsaBackendApplication'
 }
+
 
