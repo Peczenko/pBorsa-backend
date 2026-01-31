@@ -29,8 +29,8 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "user_strategies", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_strategies_user_base_symbol", 
-                columnNames = {"user_id", "base_strategy_id", "symbol"})
+        @UniqueConstraint(name = "uk_user_strategies_user_base_symbol_status",
+                columnNames = {"user_id", "base_strategy_id", "symbol", "status"})
 })
 @Getter
 @Setter

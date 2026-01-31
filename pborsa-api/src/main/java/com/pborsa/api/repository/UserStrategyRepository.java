@@ -41,14 +41,31 @@ public interface UserStrategyRepository extends JpaRepository<UserStrategyEntity
     Optional<UserStrategyEntity> findByIdAndUserId(Long id, Long userId);
 
     /**
-     * Checks if a user already has a strategy with the same base strategy and symbol.
+     * Checks if a user already has a strategy with the same base strategy, symbol, and specific status.
      *
      * @param userId         User ID
      * @param baseStrategyId Base strategy ID
      * @param symbol         Stock symbol
+     * @param status         Strategy status
      * @return true if exists
      */
-    boolean existsByUserIdAndBaseStrategyIdAndSymbol(Long userId, Long baseStrategyId, String symbol);
+    boolean existsByUserIdAndBaseStrategyIdAndSymbolAndStatus(Long userId, Long baseStrategyId, String symbol, UserStrategyStatus status);
+
+    /**
+     * Checks if a user has a running (non-terminal) strategy with the same base strategy and symbol.
+     * Running statuses are: CREATED, PREPARING, ACTIVE, PAUSED
+     *
+     * @param userId         User ID
+     * @param baseStrategyId Base strategy ID
+     * @param symbol         Stock symbol
+     * @return true if a running strategy exists
+     */
+    @Query("SELECT CASE WHEN COUNT(us) > 0 THEN true ELSE false END " +
+            "FROM UserStrategyEntity us WHERE us.userId = :userId " +
+            "AND us.baseStrategy.id = :baseStrategyId " +
+            "AND us.symbol = :symbol " +
+            "AND us.status IN ('CREATED', 'PREPARING', 'ACTIVE', 'PAUSED')")
+    boolean existsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol(Long userId, Long baseStrategyId, String symbol);
 
     /**
      * Finds all active user strategies (for scheduling/execution).

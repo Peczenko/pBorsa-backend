@@ -108,9 +108,13 @@ public class UserStrategyService {
             throw new IllegalArgumentException("Base strategy is not active: " + code);
         }
 
-        // Check for duplicate
-        if (userStrategyRepository.existsByUserIdAndBaseStrategyIdAndSymbol(userId, baseStrategy.getId(), symbol)) {
-            throw new IllegalArgumentException("You already have this strategy for symbol: " + symbol);
+        // Check for running (non-terminal) strategy with same base strategy and symbol
+        if (userStrategyRepository.existsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol(userId, baseStrategy.getId(), symbol)) {
+            throw new StrategyExecutionException(
+                    INVALID_REQUEST,
+                    "You already have an active strategy with " + code + " for symbol: " + symbol +
+                    ". Please stop or delete the existing strategy before creating a new one."
+            );
         }
 
         // Validate symbol is tradeable on Alpaca
