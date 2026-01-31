@@ -2,6 +2,8 @@ package com.pborsa.api.client.tradingengine;
 
 import com.pborsa.api.tradingengine.v1.OrderStatusUpdate;
 import com.pborsa.api.tradingengine.v1.OrderStatusUpdateAck;
+import com.pborsa.api.tradingengine.v1.StrategyStatusNotification;
+import com.pborsa.api.tradingengine.v1.StrategyStatusNotificationAck;
 import com.pborsa.api.tradingengine.v1.TradingEngineServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -49,6 +51,23 @@ public class TradingEngineOrderStatusClient implements AutoCloseable {
         return blockingStub
                 .withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS)
                 .notifyOrderStatusUpdate(update);
+    }
+
+    /**
+     * Notifies the trading engine about a strategy status update.
+     *
+     * @param notification The strategy status notification to send
+     * @return Acknowledgment from trading engine
+     * @throws StatusRuntimeException if the gRPC call fails
+     */
+    public StrategyStatusNotificationAck notifyStrategyStatusUpdate(StrategyStatusNotification notification) {
+        if (notification == null) {
+            throw new IllegalArgumentException("StrategyStatusNotification cannot be null");
+        }
+
+        return blockingStub
+                .withDeadlineAfter(timeoutSeconds, TimeUnit.SECONDS)
+                .notifyStrategyStatusUpdate(notification);
     }
 
     @Override
