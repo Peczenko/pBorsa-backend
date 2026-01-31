@@ -5,6 +5,7 @@ import com.pborsa.api.domain.dto.trading.TradingApiOrderRequest;
 import com.pborsa.api.service.trading.OrderExecutionService;
 import com.pborsa.api.service.trading.OrderExecutionResult;
 import com.pborsa.api.tradingengine.v1.TradingOrderServiceGrpc;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,15 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
     public void placeOrder(com.pborsa.api.tradingengine.v1.OrderRequest grpcRequest,
                            StreamObserver<com.pborsa.api.tradingengine.v1.OrderResponse> responseObserver) {
         try {
+            String validationError = validateOrderRequest(grpcRequest);
+            if (validationError != null) {
+                log.warn("Order request validation failed for user {}: {}", grpcRequest.getUserId(), validationError);
+                responseObserver.onError(Status.INVALID_ARGUMENT
+                        .withDescription(validationError)
+                        .asRuntimeException());
+                return;
+            }
+
             TradingApiOrderRequest dto = mapToDto(grpcRequest);
             log.info("Received gRPC placeOrder request for user {}: {}", grpcRequest.getUserId(), dto);
 
@@ -39,6 +49,16 @@ public class TradingOrderGrpcService extends TradingOrderServiceGrpc.TradingOrde
             log.error("Failed to place order over gRPC for user {}", grpcRequest.getUserId(), e);
             responseObserver.onError(e);
         }
+    }
+
+    private String validateOrderRequest(com.pborsa.api.tradingengine.v1.OrderRequest request) {
+        if (request.getClientOrderId() == null || request.getClientOrderId().isBlank()) {
+            return "client_order_id is required and cannot be empty";
+        }
+        if (request.getStrategyId() <= 0) {
+            return "strategy_id is required and must be a positive value";
+        }
+        return null;
     }
 
     private TradingApiOrderRequest mapToDto(com.pborsa.api.tradingengine.v1.OrderRequest req) {
