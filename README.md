@@ -255,6 +255,7 @@ message StrategyExecutionHeader {
   string timeframe = 5;       // Timeframe
   Timestamp start = 6;        // Historical data start time
   Timestamp end = 7;          // Historical data end time
+  double budget = 8;          // Strategy budget allocation
 }
 ```
 
