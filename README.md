@@ -233,6 +233,7 @@ The pBorsa API acts as a **gRPC client** calling the trading engine:
 | `ExecuteStrategy` | API → Engine | Stream historical bar data (OHLCV) for strategy execution |
 | `SendLiveBars` | API → Engine | Send real-time bar updates (called periodically, e.g., every minute) |
 | `NotifyOrderStatusUpdate` | API → Engine | Push order status changes to the trading engine |
+| `NotifyStrategyStatusUpdate` | API → Engine | Push strategy status changes (e.g., when strategy is stopped) |
 
 #### 2. TradingOrderService (Trading Engine → pBorsa API)
 The pBorsa API exposes a **gRPC server** on port `9092` for receiving order requests:
@@ -315,6 +316,34 @@ message OrderStatusUpdate {
   Timestamp updated_at = 8;
   Timestamp created_at = 9;
   string resume_token = 10;
+}
+```
+
+#### StrategyStatusNotification
+Pushed to trading engine when strategy status changes (currently triggered when strategy is STOPPED):
+```protobuf
+message StrategyStatusNotification {
+  int64 strategy_id = 1;
+  int64 user_id = 2;
+  string symbol = 3;
+  StrategyStatus old_status = 4;
+  StrategyStatus new_status = 5;
+  Timestamp updated_at = 6;
+}
+
+message StrategyStatusNotificationAck {
+  bool received = 1;
+  string message = 2;
+}
+
+enum StrategyStatus {
+  STRATEGY_STATUS_UNSPECIFIED = 0;
+  STRATEGY_CREATED = 1;
+  STRATEGY_PREPARING = 2;
+  STRATEGY_ACTIVE = 3;
+  STRATEGY_PAUSED = 4;
+  STRATEGY_STOPPED = 5;
+  STRATEGY_START_FAILED = 6;
 }
 ```
 
@@ -471,6 +500,78 @@ message LiveBarUpdateAck {
   int32 bars_processed = 3;       // Number of bars processed
 }
 ```
+
+---
+
+### Strategy Status Notifications
+
+When a strategy's status changes, the pBorsa API notifies the trading engine via the `NotifyStrategyStatusUpdate` gRPC method. This allows the trading engine to react to strategy lifecycle events (e.g., stop processing orders for a stopped strategy).
+
+#### How It Works
+
+1. **Event Published**: When a strategy status changes (e.g., user stops a strategy), a `StrategyStatusChangedEvent` is published
+2. **Event Listener**: `StrategyStatusNotificationService` listens for these events asynchronously
+3. **Filter**: Currently, only `STOPPED` status transitions trigger a notification to the trading engine
+4. **Proto Mapping**: The event is converted to a `StrategyStatusNotification` protobuf message
+5. **gRPC Call**: The notification is sent to the trading engine via `TradingEngineService.NotifyStrategyStatusUpdate`
+
+#### Architecture
+
+```
+UserStrategyService                    TradingEngineOrderStatusClient
+       │                                           │
+       │ publishes StrategyStatusChangedEvent      │
+       ▼                                           │
+StrategyStatusNotificationService                  │
+       │                                           │
+       │ (filters for STOPPED status)              │
+       │                                           │
+       ▼                                           │
+StrategyStatusProtoMapper                          │
+       │                                           │
+       │ (converts to protobuf)                    │
+       ▼                                           ▼
+       └──────────────────────────────────────────►│
+                                                   │ notifyStrategyStatusUpdate()
+                                                   ▼
+                                            Trading Engine
+                                            (port 9090)
+```
+
+#### RPC Method
+```protobuf
+service TradingEngineService {
+  // API calls this when strategy status changes (e.g., strategy stopped)
+  rpc NotifyStrategyStatusUpdate(StrategyStatusNotification) returns (StrategyStatusNotificationAck);
+}
+```
+
+#### Message Format
+```protobuf
+message StrategyStatusNotification {
+  int64 strategy_id = 1;          // User strategy ID
+  int64 user_id = 2;              // User ID
+  string symbol = 3;              // Trading symbol (e.g., "AAPL")
+  StrategyStatus old_status = 4;  // Previous status
+  StrategyStatus new_status = 5;  // New status (e.g., STRATEGY_STOPPED)
+  Timestamp updated_at = 6;       // When the status changed
+}
+```
+
+#### Status Values
+| Proto Enum | Domain Status | Description |
+|------------|---------------|-------------|
+| `STRATEGY_CREATED` | `CREATED` | Strategy created, not yet activated |
+| `STRATEGY_PREPARING` | `PREPARING` | Historical data transfer in progress |
+| `STRATEGY_ACTIVE` | `ACTIVE` | Strategy is running and trading |
+| `STRATEGY_PAUSED` | `PAUSED` | Temporarily paused by user |
+| `STRATEGY_STOPPED` | `STOPPED` | Permanently stopped (terminal state) |
+| `STRATEGY_START_FAILED` | `START_FAILED` | Failed to start execution |
+
+#### Error Handling
+- Notification failures do **not** affect the strategy status update (fire-and-forget pattern)
+- Errors are logged but the strategy transition completes regardless
+- The trading engine should handle missed notifications gracefully (e.g., via periodic reconciliation)
 
 ---
 
