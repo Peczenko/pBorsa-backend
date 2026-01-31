@@ -10,7 +10,6 @@ import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
 import com.pborsa.api.security.FirebaseUserPrincipal;
 import com.pborsa.api.service.security.SecurityService;
 import com.pborsa.api.service.trading.OrderQueryService;
-import com.pborsa.api.temporal.activity.StrategyExecutionActivitiesImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,7 +43,6 @@ public class OrderController {
 
     private final OrderQueryService orderQueryService;
     private final SecurityService securityService;
-    private final StrategyExecutionActivitiesImpl strategyExecutionActivitiesImpl;
 
     /**
      * Gets all orders for a user strategy.

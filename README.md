@@ -230,7 +230,8 @@ The pBorsa API acts as a **gRPC client** calling the trading engine:
 
 | RPC Method | Direction | Description |
 |------------|-----------|-------------|
-| `ExecuteStrategy` | API → Engine | Stream historical trade data for strategy execution |
+| `ExecuteStrategy` | API → Engine | Stream historical bar data (OHLCV) for strategy execution |
+| `SendLiveBars` | API → Engine | Send real-time bar updates (called periodically, e.g., every minute) |
 | `NotifyOrderStatusUpdate` | API → Engine | Push order status changes to the trading engine |
 
 #### 2. TradingOrderService (Trading Engine → pBorsa API)
@@ -256,21 +257,29 @@ message StrategyExecutionHeader {
 }
 ```
 
-#### Trade / TradeBatch
-Historical trade data streamed to the trading engine:
+#### Bar / BarBatch
+Historical bar data (OHLCV) streamed to the trading engine:
 ```protobuf
-message Trade {
+message Bar {
   Timestamp timestamp = 1;
-  double price = 2;
-  double size = 3;
-  string exchange = 4;
-  string trade_id = 5;
-  string tape = 6;
-  string conditions = 7;
+  double open = 2;
+  double high = 3;
+  double low = 4;
+  double close = 5;
+  int64 volume = 6;
+  int64 trade_count = 7;
+  double vwap = 8;
 }
 
-message TradeBatch {
-  repeated Trade trades = 1;
+message BarBatch {
+  repeated Bar bars = 1;
+}
+
+message StrategyExecutionChunk {
+  oneof payload {
+    StrategyExecutionHeader header = 1;  // Sent first
+    BarBatch bar_batch = 2;              // Historical bars follow
+  }
 }
 ```
 
@@ -409,10 +418,11 @@ When a strategy is activated (`CREATED` → `PREPARING`):
 
 1. **Status Change**: Strategy status set to `PREPARING`
 2. **Temporal Workflow Started**: `StrategyExecutionWorkflow` begins
-3. **Data Sent to Trading Engine** via gRPC `ExecuteStrategy`:
+3. **Historical Data Sent to Trading Engine** via gRPC `ExecuteStrategy`:
    - **Header**: `StrategyExecutionHeader` with execution context
-   - **Historical Trades**: `TradeBatch` chunks (last 3 months of trade data)
+   - **Historical Bars**: `BarBatch` chunks (OHLCV data for the specified period)
 4. **Workflow Completes**: Strategy status set to `ACTIVE`
+5. **Real-Time Updates Begin**: Live bar updates are sent via `SendLiveBars`
 
 #### Data Shared with Trading Engine
 When strategy execution starts, the following is streamed:
@@ -428,7 +438,39 @@ StrategyExecutionContext {
 }
 ```
 
-> **⚠️ Note**: There is **no real-time streaming** to the trading engine currently. Only historical trade data is sent during strategy activation.
+### Real-Time Bar Updates
+
+After a strategy becomes `ACTIVE`, the API sends real-time bar updates to the trading engine using the `SendLiveBars` RPC method.
+
+#### How It Works
+
+1. **Periodic Updates**: The API calls `SendLiveBars` periodically (e.g., every minute) with the latest bar data
+2. **Multi-Symbol Support**: Each update can contain bars for multiple symbols
+3. **Strategy Routing**: Updates include `strategy_ids` to indicate which strategies are interested in the data
+
+#### LiveBarUpdate Message
+```protobuf
+message LiveBarUpdate {
+  Timestamp update_time = 1;      // When the update was sent
+  repeated SymbolBar bars = 2;    // Bar data for each symbol
+  repeated int64 strategy_ids = 3; // Strategies interested in these symbols
+}
+
+message SymbolBar {
+  string symbol = 1;              // Trading symbol (e.g., "AAPL")
+  string timeframe = 2;           // Bar timeframe (e.g., "1Min")
+  Bar bar = 3;                    // The OHLCV bar data
+}
+```
+
+#### Response
+```protobuf
+message LiveBarUpdateAck {
+  bool received = 1;              // Whether the update was accepted
+  string message = 2;             // Status message
+  int32 bars_processed = 3;       // Number of bars processed
+}
+```
 
 ---
 
