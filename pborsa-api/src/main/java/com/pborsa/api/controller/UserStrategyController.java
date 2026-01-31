@@ -160,14 +160,18 @@ public class UserStrategyController {
     public ResponseEntity<ApiResponse<Void>> deleteUserStrategy(
             @Parameter(description = "User ID") @PathVariable Long userId,
             @Parameter(description = "Strategy ID") @PathVariable Long strategyId,
-            @AuthenticationPrincipal FirebaseUserPrincipal principal) {
-        Long targetUserId = securityService.resolveTargetUserId(userId, principal);
-        boolean deleted = strategyService.deleteUserStrategy(targetUserId, strategyId);
-        if (deleted) {
-            return ResponseEntity.ok(ApiResponse.success(null));
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("Strategy not found"));
+            @AuthenticationPrincipal FirebaseUserPrincipal principal)
+    {
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Strategy removal is temporally disabled by API"));
+//        Long targetUserId = securityService.resolveTargetUserId(userId, principal);
+//        boolean deleted = strategyService.deleteUserStrategy(targetUserId, strategyId);
+//        if (deleted) {
+//            return ResponseEntity.ok(ApiResponse.success(null));
+//        }
+//        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                .body(ApiResponse.error("Strategy not found"));
     }
 
     /**
