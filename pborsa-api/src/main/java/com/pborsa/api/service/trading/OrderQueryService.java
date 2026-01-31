@@ -1,5 +1,6 @@
 package com.pborsa.api.service.trading;
 
+import com.pborsa.api.domain.dto.strategy.FilledOrdersResponse;
 import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
 import com.pborsa.api.domain.dto.trading.OrderStatus;
 import com.pborsa.api.domain.entity.OrderEntity;
@@ -127,6 +128,14 @@ public class OrderQueryService {
         log.debug("Admin getting order {}", orderId);
         return orderRepository.findById(orderId)
                 .map(orderDetailMapper::toOrderDetailDto);
+    }
+
+    public List<FilledOrdersResponse> getFilledOrders(Long targetUserId, Long userStrategyId) {
+        log.info("Getting filled orders for user: {}, strategy: {}", targetUserId, userStrategyId);
+        return orderRepository.findByUserStrategyIdAndStatus(userStrategyId, OrderStatus.FILLED)
+                .stream()
+                .map(orderDetailMapper::toFilledOrderResponse)
+                .toList();
     }
 }
 

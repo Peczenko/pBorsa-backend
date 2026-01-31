@@ -5,10 +5,12 @@ import com.pborsa.api.config.openapi.model.ApiErrorResponseDoc;
 import com.pborsa.api.config.openapi.model.OrderDetailListResponseDoc;
 import com.pborsa.api.config.openapi.model.OrderDetailResponseDoc;
 import com.pborsa.api.controller.response.ApiResponse;
+import com.pborsa.api.domain.dto.strategy.FilledOrdersResponse;
 import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
 import com.pborsa.api.security.FirebaseUserPrincipal;
 import com.pborsa.api.service.security.SecurityService;
 import com.pborsa.api.service.trading.OrderQueryService;
+import com.pborsa.api.temporal.activity.StrategyExecutionActivitiesImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +44,7 @@ public class OrderController {
 
     private final OrderQueryService orderQueryService;
     private final SecurityService securityService;
+    private final StrategyExecutionActivitiesImpl strategyExecutionActivitiesImpl;
 
     /**
      * Gets all orders for a user strategy.
@@ -88,5 +91,16 @@ public class OrderController {
                 .map(order -> ResponseEntity.ok(ApiResponse.success(order)))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Order not found")));
+    }
+
+    @GetMapping("/{userId}/strategy/{userStrategyId}/filled")
+    public ResponseEntity<ApiResponse<List<FilledOrdersResponse>>> getFilledOrders(
+        @PathVariable Long userId,
+        @PathVariable Long userStrategyId,
+        @AuthenticationPrincipal FirebaseUserPrincipal principal
+    ){
+        Long targetUserId = securityService.resolveTargetUserId(userId, principal);
+        List<FilledOrdersResponse> orders = orderQueryService.getFilledOrders(targetUserId, userStrategyId);
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 }

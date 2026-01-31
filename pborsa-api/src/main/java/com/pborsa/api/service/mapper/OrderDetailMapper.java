@@ -1,5 +1,6 @@
 package com.pborsa.api.service.mapper;
 
+import com.pborsa.api.domain.dto.strategy.FilledOrdersResponse;
 import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
 import com.pborsa.api.domain.entity.OrderEntity;
 import org.springframework.stereotype.Component;
@@ -68,6 +69,31 @@ public class OrderDetailMapper {
                 .map(this::toOrderDetailDto)
                 .toList();
     }
+
+    public List<OrderDetailDto> toFilledOrders(List<OrderEntity> entities) {
+        if (entities == null) {
+            return List.of();
+        }
+
+        return entities.stream()
+                .map(this::toOrderDetailDto)
+                .toList();
+    }
+
+    public FilledOrdersResponse toFilledOrderResponse(OrderEntity order){
+        if(order == null){
+            return null;
+        }
+
+        return new FilledOrdersResponse(
+                order.getSymbol(),
+                order.getQuantity(),
+                order.getSide(),
+                order.getUpdatedAt()
+        );
+    }
+
+
 }
 
 
