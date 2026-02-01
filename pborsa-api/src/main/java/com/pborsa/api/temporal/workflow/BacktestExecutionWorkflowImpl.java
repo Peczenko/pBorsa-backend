@@ -30,12 +30,12 @@ public class BacktestExecutionWorkflowImpl implements BacktestExecutionWorkflow 
                 .build();
 
         ActivityOptions backtestOptions = ActivityOptions.newBuilder()
-                .setStartToCloseTimeout(Duration.ofMinutes(30))
-                .setScheduleToCloseTimeout(Duration.ofHours(1))
+                .setStartToCloseTimeout(Duration.ofHours(24))
+                .setScheduleToCloseTimeout(Duration.ofHours(24))
                 .setTaskQueue(TaskQueues.BACKTEST_TASK_QUEUE)
                 .setRetryOptions(backtestRetryOptions)
                 .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
-                .setHeartbeatTimeout(Duration.ofHours(2))
+                .setHeartbeatTimeout(Duration.ofHours(24))
                 .build();
 
         this.backtestActivities = Workflow.newActivityStub(BacktestActivities.class, backtestOptions);
