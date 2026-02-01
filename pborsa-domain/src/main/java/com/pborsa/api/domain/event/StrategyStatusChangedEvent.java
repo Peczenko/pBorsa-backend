@@ -12,9 +12,9 @@ public record StrategyStatusChangedEvent(
         Long strategyId,
         Long userId,
         String symbol,
+        String baseStrategyCode,
         BigDecimal budget,
         UserStrategyStatus oldStatus,
         UserStrategyStatus newStatus
 ) {}
-
 

@@ -19,6 +19,7 @@ public record StrategyExecutionContext(
         Long userId,
         Long strategyId,
         String symbol,
+        String baseStrategyCode,
         BigDecimal budget,
         Instant start,
         Instant end
@@ -29,6 +30,7 @@ public record StrategyExecutionContext(
      * @param userId         user ID
      * @param strategyId     strategy ID
      * @param symbol         stock symbol
+     * @param baseStrategyCode base strategy code
      * @param budget         strategy budget
      * @param lookbackPeriod lookback period for historical data
      * @param endOffset      offset from current time for end timestamp
@@ -38,6 +40,7 @@ public record StrategyExecutionContext(
             Long userId,
             Long strategyId,
             String symbol,
+            String baseStrategyCode,
             BigDecimal budget,
             Period lookbackPeriod,
             Duration endOffset
@@ -51,6 +54,7 @@ public record StrategyExecutionContext(
                 .userId(userId)
                 .strategyId(strategyId)
                 .symbol(symbol)
+                .baseStrategyCode(baseStrategyCode)
                 .budget(budget)
                 .start(start)
                 .end(end)

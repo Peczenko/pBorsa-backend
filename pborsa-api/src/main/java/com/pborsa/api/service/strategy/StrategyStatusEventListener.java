@@ -80,6 +80,7 @@ public class StrategyStatusEventListener {
                 event.userId(),
                 event.strategyId(),
                 event.symbol(),
+                event.baseStrategyCode(),
                 event.budget(),
                 executionProperties.getLookbackPeriod(),
                 executionProperties.getEndOffset()
@@ -130,5 +131,4 @@ public class StrategyStatusEventListener {
         // - Optionally close open positions
     }
 }
-
 

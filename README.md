@@ -256,6 +256,7 @@ message StrategyExecutionHeader {
   Timestamp start = 6;        // Historical data start time
   Timestamp end = 7;          // Historical data end time
   double budget = 8;          // Strategy budget allocation
+  string base_strategy_code = 9; // Base strategy code (e.g., "MOMENTUM_V1")
 }
 ```
 
@@ -462,6 +463,7 @@ StrategyExecutionContext {
     userId,         // User ID
     strategyId,     // User strategy ID
     symbol,         // Trading symbol (e.g., "AAPL")
+    baseStrategyCode, // Base strategy code (e.g., "MOMENTUM_V1")
     budget,         // User's budget for this strategy
     start,          // Historical data start (default: 3 months ago)
     end             // Historical data end (default: now - 15 min)

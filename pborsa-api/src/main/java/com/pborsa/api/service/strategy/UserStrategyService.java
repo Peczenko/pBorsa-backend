@@ -294,6 +294,7 @@ public class UserStrategyService {
                 entity.getId(),
                 entity.getUserId(),
                 entity.getSymbol(),
+                entity.getBaseStrategy().getCode(),
                 entity.getBudget(),
                 oldStatus,
                 newStatus
