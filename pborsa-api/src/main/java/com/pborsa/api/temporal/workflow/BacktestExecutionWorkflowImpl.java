@@ -35,7 +35,7 @@ public class BacktestExecutionWorkflowImpl implements BacktestExecutionWorkflow 
                 .setTaskQueue(TaskQueues.BACKTEST_TASK_QUEUE)
                 .setRetryOptions(backtestRetryOptions)
                 .setCancellationType(ActivityCancellationType.WAIT_CANCELLATION_COMPLETED)
-                .setHeartbeatTimeout(Duration.ofMinutes(5))
+                .setHeartbeatTimeout(Duration.ofHours(2))
                 .build();
 
         this.backtestActivities = Workflow.newActivityStub(BacktestActivities.class, backtestOptions);

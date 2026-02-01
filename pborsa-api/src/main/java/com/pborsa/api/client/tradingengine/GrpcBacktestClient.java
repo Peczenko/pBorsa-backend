@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class GrpcBacktestClient implements BacktestClient, AutoCloseable {
 
-    private static final int BACKTEST_TIMEOUT_MINUTES = 10;
+    private static final int BACKTEST_TIMEOUT_MINUTES = 120;
     private static final int CHANNEL_SHUTDOWN_TIMEOUT_SECONDS = 5;
 
     private final ManagedChannel channel;
