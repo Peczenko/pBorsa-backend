@@ -4,10 +4,8 @@ import com.pborsa.api.domain.dto.strategy.BaseStrategyDto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
-
 /**
- * DTO representing a backtest with its results.
+ * DTO representing a backtest with its results and order counts.
  */
 public record BacktestDto(
         Long id,
@@ -22,10 +20,11 @@ public record BacktestDto(
         BigDecimal maxDrawdown,
         Integer totalTrades,
         Integer winningTrades,
+        Integer buyOrdersCount,
+        Integer sellOrdersCount,
         String errorMessage,
         Instant createdAt,
         Instant updatedAt,
-        Instant completedAt,
-        List<BacktestOrderDto> orders
+        Instant completedAt
 ) {
 }

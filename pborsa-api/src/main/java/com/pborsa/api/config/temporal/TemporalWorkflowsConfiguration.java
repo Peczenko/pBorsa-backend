@@ -40,8 +40,8 @@ public class TemporalWorkflowsConfiguration extends AbstractTemporalWorkflowsCon
                 executionTimeout = Duration.ofHours(6);
                 runTimeout = Duration.ofHours(6);
             } else if (BacktestExecutionWorkflow.class.isAssignableFrom(workflowClass)) {
-                executionTimeout = Duration.ofHours(2);
-                runTimeout = Duration.ofHours(2);
+                executionTimeout = Duration.ofHours(24);
+                runTimeout = Duration.ofHours(24);
             }
 
             WorkflowOptions options = WorkflowOptions.newBuilder()
