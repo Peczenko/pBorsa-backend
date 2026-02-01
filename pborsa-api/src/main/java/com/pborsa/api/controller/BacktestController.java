@@ -1,6 +1,7 @@
 package com.pborsa.api.controller;
 
 import com.pborsa.api.controller.response.ApiResponse;
+import com.pborsa.api.domain.dto.backtest.BacktestBalancePointDto;
 import com.pborsa.api.domain.dto.backtest.BacktestDto;
 import com.pborsa.api.domain.dto.backtest.CreateBacktestRequest;
 import com.pborsa.api.security.FirebaseUserPrincipal;
@@ -75,6 +76,28 @@ public class BacktestController {
         Long targetUserId = securityService.resolveTargetUserId(userId, principal);
         return backtestService.getBacktest(targetUserId, backtestId)
                 .map(backtest -> ResponseEntity.ok(ApiResponse.success(backtest)))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Backtest not found")));
+    }
+
+    /**
+     * Gets balance timeline for a backtest based on executed orders.
+     *
+     * @param userId     User ID from path
+     * @param backtestId Backtest ID
+     * @param principal  Authenticated user principal
+     * @return List of balance points
+     */
+    @GetMapping("/{backtestId}/balance-timeline")
+    @Operation(summary = "Get backtest balance timeline",
+            description = "Gets balance timeline for a backtest based on executed orders.")
+    public ResponseEntity<ApiResponse<List<BacktestBalancePointDto>>> getBacktestBalanceTimeline(
+            @Parameter(description = "User ID") @PathVariable Long userId,
+            @Parameter(description = "Backtest ID") @PathVariable Long backtestId,
+            @AuthenticationPrincipal FirebaseUserPrincipal principal) {
+        Long targetUserId = securityService.resolveTargetUserId(userId, principal);
+        return backtestService.getBacktestBalanceTimeline(targetUserId, backtestId)
+                .map(points -> ResponseEntity.ok(ApiResponse.success(points)))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Backtest not found")));
     }
