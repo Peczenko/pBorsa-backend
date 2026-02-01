@@ -3,6 +3,8 @@ package com.pborsa.api.service.backtest;
 import com.pborsa.api.domain.dto.backtest.BacktestBalancePointDto;
 import com.pborsa.api.domain.dto.backtest.BacktestDto;
 import com.pborsa.api.domain.dto.backtest.CreateBacktestRequest;
+import com.pborsa.api.domain.dto.backtest.BacktestOrderDto;
+import com.pborsa.api.domain.dto.backtest.BacktestSummaryDto;
 import com.pborsa.api.domain.entity.BacktestEntity;
 import com.pborsa.api.domain.entity.BacktestOrderEntity;
 import com.pborsa.api.domain.entity.BacktestStatus;
@@ -15,13 +17,17 @@ import com.pborsa.api.service.strategy.BaseStrategyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -42,25 +48,39 @@ public class BacktestService {
      * Gets all backtests for a user.
      *
      * @param userId User ID
-     * @return List of backtest DTOs
+     * @return List of backtest summary DTOs
      */
     @Transactional(readOnly = true)
-    public List<BacktestDto> getUserBacktests(Long userId) {
+    public List<BacktestSummaryDto> getUserBacktests(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID is required");
         }
 
         log.debug("Getting all backtests for user: {}", userId);
         List<BacktestEntity> backtests = backtestRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        return backtestMapper.toBacktestDtoList(backtests);
+        if (backtests.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> backtestIds = backtests.stream()
+                .map(BacktestEntity::getId)
+                .toList();
+        Map<Long, OrderCounts> countsByBacktestId = loadOrderCounts(backtestIds);
+
+        return backtests.stream()
+                .map(backtest -> {
+                    OrderCounts counts = countsByBacktestId.getOrDefault(backtest.getId(), OrderCounts.empty());
+                    return backtestMapper.toBacktestSummaryDto(backtest, counts.buyOrders(), counts.sellOrders());
+                })
+                .toList();
     }
 
     /**
-     * Gets a specific backtest with its orders.
+     * Gets a specific backtest with order counts.
      *
      * @param userId     User ID
      * @param backtestId Backtest ID
-     * @return Optional backtest DTO with orders
+     * @return Optional backtest DTO with order counts
      */
     @Transactional(readOnly = true)
     public Optional<BacktestDto> getBacktest(Long userId, Long backtestId) {
@@ -75,10 +95,41 @@ public class BacktestService {
 
         return backtestRepository.findByIdAndUserId(backtestId, userId)
                 .map(backtest -> {
-                    List<BacktestOrderEntity> orders = backtestOrderRepository
-                            .findByBacktestIdOrderByExecutedAtAsc(backtestId);
-                    return backtestMapper.toBacktestDto(backtest, orders);
+                    Map<Long, OrderCounts> countsByBacktestId = loadOrderCounts(List.of(backtestId));
+                    OrderCounts counts = countsByBacktestId.getOrDefault(backtestId, OrderCounts.empty());
+                    return backtestMapper.toBacktestDto(backtest, counts.buyOrders(), counts.sellOrders());
                 });
+    }
+
+    /**
+     * Gets paged orders for a backtest, ordered by newest first by default.
+     *
+     * @param userId     User ID
+     * @param backtestId Backtest ID
+     * @param pageable   Paging parameters
+     * @return Optional page of backtest orders
+     */
+    @Transactional(readOnly = true)
+    public Optional<Page<BacktestOrderDto>> getBacktestOrders(Long userId, Long backtestId, Pageable pageable) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+        if (backtestId == null) {
+            throw new IllegalArgumentException("Backtest ID is required");
+        }
+        if (pageable == null) {
+            throw new IllegalArgumentException("Pageable is required");
+        }
+
+        log.debug("Getting orders for backtest {} (user: {})", backtestId, userId);
+
+        boolean exists = backtestRepository.findByIdAndUserId(backtestId, userId).isPresent();
+        if (!exists) {
+            return Optional.empty();
+        }
+
+        Page<BacktestOrderEntity> orders = backtestOrderRepository.findByBacktestId(backtestId, pageable);
+        return Optional.of(orders.map(backtestMapper::toBacktestOrderDto));
     }
 
     /**
@@ -308,5 +359,39 @@ public class BacktestService {
             throw new IllegalStateException("Unsupported backtest order side: " + side);
         }
         return normalized;
+    }
+
+    private Map<Long, OrderCounts> loadOrderCounts(List<Long> backtestIds) {
+        if (backtestIds == null || backtestIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<BacktestOrderRepository.BacktestOrderCounts> counts = backtestOrderRepository
+                .findOrderCountsByBacktestIds(backtestIds);
+        Map<Long, OrderCounts> result = new HashMap<>();
+
+        for (BacktestOrderRepository.BacktestOrderCounts row : counts) {
+            if (row == null || row.getBacktestId() == null) {
+                continue;
+            }
+            int buyCount = toIntCount(row.getBuyCount());
+            int sellCount = toIntCount(row.getSellCount());
+            result.put(row.getBacktestId(), new OrderCounts(buyCount, sellCount));
+        }
+
+        return result;
+    }
+
+    private static int toIntCount(Long count) {
+        if (count == null) {
+            return 0;
+        }
+        return Math.toIntExact(count);
+    }
+
+    private record OrderCounts(int buyOrders, int sellOrders) {
+        static OrderCounts empty() {
+            return new OrderCounts(0, 0);
+        }
     }
 }

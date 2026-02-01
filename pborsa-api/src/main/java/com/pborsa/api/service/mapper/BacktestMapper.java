@@ -2,6 +2,7 @@ package com.pborsa.api.service.mapper;
 
 import com.pborsa.api.domain.dto.backtest.BacktestDto;
 import com.pborsa.api.domain.dto.backtest.BacktestOrderDto;
+import com.pborsa.api.domain.dto.backtest.BacktestSummaryDto;
 import com.pborsa.api.domain.entity.BacktestEntity;
 import com.pborsa.api.domain.entity.BacktestOrderEntity;
 import lombok.RequiredArgsConstructor;
@@ -19,30 +20,72 @@ public class BacktestMapper {
     private final BaseStrategyMapper baseStrategyMapper;
 
     /**
-     * Maps a BacktestEntity to BacktestDto without orders.
+     * Maps a BacktestEntity to BacktestDto with order counts.
      *
      * @param entity Backtest entity
      * @return Backtest DTO
      */
     public BacktestDto toBacktestDto(BacktestEntity entity) {
-        return toBacktestDto(entity, null);
+        return toBacktestDto(entity, 0, 0);
     }
 
     /**
-     * Maps a BacktestEntity to BacktestDto with orders.
+     * Maps a BacktestEntity to BacktestSummaryDto with order counts.
      *
      * @param entity Backtest entity
-     * @param orders List of order entities (can be null)
-     * @return Backtest DTO
+     * @return Backtest summary DTO
      */
-    public BacktestDto toBacktestDto(BacktestEntity entity, List<BacktestOrderEntity> orders) {
+    public BacktestSummaryDto toBacktestSummaryDto(BacktestEntity entity) {
+        return toBacktestSummaryDto(entity, 0, 0);
+    }
+
+    /**
+     * Maps a BacktestEntity to BacktestSummaryDto with order counts.
+     *
+     * @param entity         Backtest entity
+     * @param buyOrdersCount Total number of BUY orders
+     * @param sellOrdersCount Total number of SELL orders
+     * @return Backtest summary DTO
+     */
+    public BacktestSummaryDto toBacktestSummaryDto(BacktestEntity entity, int buyOrdersCount, int sellOrdersCount) {
         if (entity == null) {
             return null;
         }
 
-        List<BacktestOrderDto> orderDtos = orders != null
-                ? orders.stream().map(this::toBacktestOrderDto).toList()
-                : null;
+        return new BacktestSummaryDto(
+                entity.getId(),
+                entity.getName(),
+                baseStrategyMapper.toBaseStrategyDto(entity.getBaseStrategy()),
+                entity.getSymbol(),
+                entity.getBudget(),
+                entity.getTestingStart(),
+                entity.getTestingEnd(),
+                entity.getStatus().name(),
+                entity.getPnl(),
+                entity.getMaxDrawdown(),
+                entity.getTotalTrades(),
+                entity.getWinningTrades(),
+                buyOrdersCount,
+                sellOrdersCount,
+                entity.getErrorMessage(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.getCompletedAt()
+        );
+    }
+
+    /**
+     * Maps a BacktestEntity to BacktestDto with order counts.
+     *
+     * @param entity Backtest entity
+     * @param buyOrdersCount Total number of BUY orders
+     * @param sellOrdersCount Total number of SELL orders
+     * @return Backtest DTO
+     */
+    public BacktestDto toBacktestDto(BacktestEntity entity, int buyOrdersCount, int sellOrdersCount) {
+        if (entity == null) {
+            return null;
+        }
 
         return new BacktestDto(
                 entity.getId(),
@@ -57,11 +100,12 @@ public class BacktestMapper {
                 entity.getMaxDrawdown(),
                 entity.getTotalTrades(),
                 entity.getWinningTrades(),
+                buyOrdersCount,
+                sellOrdersCount,
                 entity.getErrorMessage(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                entity.getCompletedAt(),
-                orderDtos
+                entity.getCompletedAt()
         );
     }
 
@@ -100,6 +144,22 @@ public class BacktestMapper {
 
         return entities.stream()
                 .map(this::toBacktestDto)
+                .toList();
+    }
+
+    /**
+     * Maps a list of BacktestEntity to list of BacktestSummaryDto.
+     *
+     * @param entities List of backtest entities
+     * @return List of backtest summary DTOs
+     */
+    public List<BacktestSummaryDto> toBacktestSummaryDtoList(List<BacktestEntity> entities) {
+        if (entities == null) {
+            return List.of();
+        }
+
+        return entities.stream()
+                .map(this::toBacktestSummaryDto)
                 .toList();
     }
 }

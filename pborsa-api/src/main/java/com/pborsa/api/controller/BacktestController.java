@@ -3,6 +3,8 @@ package com.pborsa.api.controller;
 import com.pborsa.api.controller.response.ApiResponse;
 import com.pborsa.api.domain.dto.backtest.BacktestBalancePointDto;
 import com.pborsa.api.domain.dto.backtest.BacktestDto;
+import com.pborsa.api.domain.dto.backtest.BacktestOrderDto;
+import com.pborsa.api.domain.dto.backtest.BacktestSummaryDto;
 import com.pborsa.api.domain.dto.backtest.CreateBacktestRequest;
 import com.pborsa.api.security.FirebaseUserPrincipal;
 import com.pborsa.api.service.backtest.BacktestService;
@@ -13,6 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,28 +53,28 @@ public class BacktestController {
      *
      * @param userId    User ID from path
      * @param principal Authenticated user principal
-     * @return List of backtests
+     * @return List of backtests with order counts
      */
     @GetMapping
-    @Operation(summary = "List backtests", description = "Gets all backtests for a user.")
-    public ResponseEntity<ApiResponse<List<BacktestDto>>> getUserBacktests(
+    @Operation(summary = "List backtests", description = "Gets all backtests for a user with BUY/SELL order counts.")
+    public ResponseEntity<ApiResponse<List<BacktestSummaryDto>>> getUserBacktests(
             @Parameter(description = "User ID") @PathVariable Long userId,
             @AuthenticationPrincipal FirebaseUserPrincipal principal) {
         Long targetUserId = securityService.resolveTargetUserId(userId, principal);
-        List<BacktestDto> backtests = backtestService.getUserBacktests(targetUserId);
+        List<BacktestSummaryDto> backtests = backtestService.getUserBacktests(targetUserId);
         return ResponseEntity.ok(ApiResponse.success(backtests));
     }
 
     /**
-     * Gets a specific backtest with its orders.
+     * Gets a specific backtest with order counts.
      *
      * @param userId     User ID from path
      * @param backtestId Backtest ID
      * @param principal  Authenticated user principal
-     * @return Backtest details with orders
+     * @return Backtest details with order counts
      */
     @GetMapping("/{backtestId}")
-    @Operation(summary = "Get backtest", description = "Gets a specific backtest by ID with its orders.")
+    @Operation(summary = "Get backtest", description = "Gets a specific backtest by ID with BUY/SELL order counts.")
     public ResponseEntity<ApiResponse<BacktestDto>> getBacktest(
             @Parameter(description = "User ID") @PathVariable Long userId,
             @Parameter(description = "Backtest ID") @PathVariable Long backtestId,
@@ -76,6 +82,30 @@ public class BacktestController {
         Long targetUserId = securityService.resolveTargetUserId(userId, principal);
         return backtestService.getBacktest(targetUserId, backtestId)
                 .map(backtest -> ResponseEntity.ok(ApiResponse.success(backtest)))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Backtest not found")));
+    }
+
+    /**
+     * Gets paged orders for a backtest, newest orders first by default.
+     *
+     * @param userId     User ID from path
+     * @param backtestId Backtest ID
+     * @param pageable   Paging parameters (sort defaults to executedAt desc)
+     * @param principal  Authenticated user principal
+     * @return Page of backtest orders
+     */
+    @GetMapping("/{backtestId}/orders")
+    @Operation(summary = "Get backtest orders",
+            description = "Gets a paged list of orders for a backtest. Newest orders are returned first by default.")
+    public ResponseEntity<ApiResponse<Page<BacktestOrderDto>>> getBacktestOrders(
+            @Parameter(description = "User ID") @PathVariable Long userId,
+            @Parameter(description = "Backtest ID") @PathVariable Long backtestId,
+            @PageableDefault(sort = "executedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal FirebaseUserPrincipal principal) {
+        Long targetUserId = securityService.resolveTargetUserId(userId, principal);
+        return backtestService.getBacktestOrders(targetUserId, backtestId, pageable)
+                .map(orders -> ResponseEntity.ok(ApiResponse.success(orders)))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Backtest not found")));
     }
