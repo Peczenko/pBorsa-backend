@@ -12,6 +12,7 @@ import com.pborsa.api.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -109,10 +110,12 @@ public class OrderPersistenceService {
         return orderRepository.save(entity);
     }
 
+    @Transactional
     public OrderEntity updateStatus(UUID orderId, OrderStatus status, String message) {
         return updateStatus(orderId, status, message, null);
     }
 
+    @Transactional
     public OrderEntity updateStatus(UUID orderId,
                                     OrderStatus status,
                                     String message,
@@ -129,6 +132,7 @@ public class OrderPersistenceService {
         return saved;
     }
 
+    @Transactional
     public boolean updateStatusByExternalIds(String alpacaOrderId,
                                              String clientOrderId,
                                              OrderStatus status,
@@ -136,6 +140,7 @@ public class OrderPersistenceService {
         return updateStatusByExternalIds(alpacaOrderId, clientOrderId, status, message, null, null);
     }
 
+    @Transactional
     public boolean updateStatusByExternalIds(String alpacaOrderId,
                                              String clientOrderId,
                                              OrderStatus status,
@@ -156,6 +161,7 @@ public class OrderPersistenceService {
      * @param fillData      Optional fill data from Alpaca order response
      * @return true if update was applied
      */
+    @Transactional
     public boolean updateStatusByExternalIds(String alpacaOrderId,
                                              String clientOrderId,
                                              OrderStatus status,
@@ -249,12 +255,14 @@ public class OrderPersistenceService {
     }
 
 
+    @Transactional
     public OrderEntity createNewOrder(Long userId, TradingApiOrderRequest request, String workflowId) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.ACCEPTED_BY_APP, workflowId);
         createOrderHistory(userId, entity, OrderStatus.ACCEPTED_BY_APP, null);
         return entity;
     }
 
+    @Transactional
     public OrderEntity createRejectedOrder(Long userId, TradingApiOrderRequest request, String message) {
         OrderEntity entity = createOrder(userId, request, OrderStatus.REJECTED, null);
         createOrderHistory(userId, entity, OrderStatus.REJECTED, message);
