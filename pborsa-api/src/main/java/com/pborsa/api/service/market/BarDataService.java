@@ -16,10 +16,13 @@ import net.jacobpeterson.alpaca.openapi.marketdata.model.StockBar;
 import net.jacobpeterson.alpaca.openapi.marketdata.model.StockBarsResp;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -82,11 +85,25 @@ public class BarDataService {
 
         try {
             AlpacaAPI client = getClient(userId);
+            // Use DESC sort to get most recent bars first, ensuring we get the latest data
+            // even if there are more bars available than the limit
             StockBarsResp response = fetchBarsFromAlpaca(
-                    client, symbol, validatedTimeframe, timeRange, validatedLimit, Sort.ASC
+                    client, symbol, validatedTimeframe, timeRange, validatedLimit, Sort.DESC
             );
 
-            return extractBars(response, symbol);
+            List<StockBarDto> bars = extractBars(response, symbol);
+            
+            if (bars.isEmpty()) {
+                log.warn("No bars returned for symbol={}, timeframe={}, start={}, end={}. Feed: {}",
+                        symbol, validatedTimeframe, timeRange.start(), timeRange.end(), 
+                        barDataProperties.getStockFeed());
+                logTradingHoursDiagnostics(timeRange.start(), timeRange.end());
+            } else {
+                // Reverse to return in ascending order (oldest to newest) for chart rendering
+                Collections.reverse(bars);
+            }
+            
+            return bars;
         } catch (AlpacaException e) {
             throw e;
         } catch (Exception e) {
@@ -390,4 +407,56 @@ public class BarDataService {
      * Internal record for validated time range.
      */
     private record TimeRange(Instant start, Instant end) {}
+
+    // ==================== Trading Hours Diagnostics ====================
+    
+    private static final ZoneId US_EASTERN = ZoneId.of("America/New_York");
+    private static final int MARKET_OPEN_HOUR = 9;
+    private static final int MARKET_OPEN_MINUTE = 30;
+    private static final int MARKET_CLOSE_HOUR = 16;
+    
+    /**
+     * Logs diagnostic information about why a time range might have no data.
+     * Useful for debugging empty responses from Alpaca.
+     */
+    private void logTradingHoursDiagnostics(Instant start, Instant end) {
+        ZonedDateTime startET = start.atZone(US_EASTERN);
+        ZonedDateTime endET = end.atZone(US_EASTERN);
+        
+        log.debug("Trading hours diagnostics - Start: {} ({} ET, {}), End: {} ({} ET, {})",
+                start, startET.toLocalDateTime(), startET.getDayOfWeek(),
+                end, endET.toLocalDateTime(), endET.getDayOfWeek());
+        
+        // Check if entire range is on weekends
+        if (isWeekend(startET) && isWeekend(endET)) {
+            log.warn("Both start and end times fall on weekends - no market data available");
+        }
+        
+        // Check if end time is before market open on the same day
+        if (!isWeekend(endET) && isBeforeMarketOpen(endET)) {
+            log.warn("End time {} ET is before market open (9:30 AM ET) - no regular session data for that day",
+                    endET.toLocalTime());
+        }
+        
+        // Check if start time is after market close
+        if (!isWeekend(startET) && isAfterMarketClose(startET)) {
+            log.warn("Start time {} ET is after market close (4:00 PM ET)",
+                    startET.toLocalTime());
+        }
+    }
+    
+    private boolean isWeekend(ZonedDateTime dateTime) {
+        DayOfWeek day = dateTime.getDayOfWeek();
+        return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
+    }
+    
+    private boolean isBeforeMarketOpen(ZonedDateTime dateTime) {
+        int hour = dateTime.getHour();
+        int minute = dateTime.getMinute();
+        return hour < MARKET_OPEN_HOUR || (hour == MARKET_OPEN_HOUR && minute < MARKET_OPEN_MINUTE);
+    }
+    
+    private boolean isAfterMarketClose(ZonedDateTime dateTime) {
+        return dateTime.getHour() >= MARKET_CLOSE_HOUR;
+    }
 }
