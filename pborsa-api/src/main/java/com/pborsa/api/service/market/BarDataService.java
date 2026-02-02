@@ -71,8 +71,11 @@ public class BarDataService {
     ) {
         validateSymbol(symbol);
         String validatedTimeframe = validateAndNormalizeTimeframe(timeframe);
-        TimeRange timeRange = validateAndNormalizeTimeRange(start, end);
         int validatedLimit = validateLimit(limit);
+        
+        // Calculate appropriate time range based on limit and timeframe
+        // This ensures we get the most recent bars when start/end are not specified
+        TimeRange timeRange = calculateTimeRangeForBars(start, end, validatedTimeframe, validatedLimit);
 
         log.debug("Fetching historical bars: symbol={}, timeframe={}, start={}, end={}, limit={}",
                 symbol, validatedTimeframe, timeRange.start(), timeRange.end(), validatedLimit);
@@ -271,10 +274,30 @@ public class BarDataService {
         return normalized;
     }
 
-    private TimeRange validateAndNormalizeTimeRange(Instant start, Instant end) {
+    /**
+     * Calculates the appropriate time range for fetching bars.
+     * When start is not provided, calculates it based on limit and timeframe
+     * to ensure we get the most recent bars (not bars from the beginning of a large range).
+     *
+     * @param start     user-provided start (nullable)
+     * @param end       user-provided end (nullable)
+     * @param timeframe the bar timeframe
+     * @param limit     the number of bars requested
+     * @return calculated time range
+     */
+    private TimeRange calculateTimeRangeForBars(Instant start, Instant end, String timeframe, int limit) {
         Instant now = Instant.now();
         Instant effectiveEnd = (end != null) ? end : now;
-        Instant effectiveStart = (start != null) ? start : effectiveEnd.minus(barDataProperties.getDefaultLookback());
+        
+        Instant effectiveStart;
+        if (start != null) {
+            // User provided explicit start, use it
+            effectiveStart = start;
+        } else {
+            // Calculate start based on limit and timeframe
+            // Add buffer for non-trading hours (weekends, market closed hours)
+            effectiveStart = calculateStartForBarsWithBuffer(effectiveEnd, timeframe, limit);
+        }
 
         // Validate max lookback
         Duration lookback = Duration.between(effectiveStart, effectiveEnd);
@@ -289,6 +312,42 @@ public class BarDataService {
         }
 
         return new TimeRange(effectiveStart, effectiveEnd);
+    }
+
+    /**
+     * Calculates start time for the requested number of bars, accounting for
+     * non-trading hours (weekends, market closed periods).
+     * 
+     * For minute/hour bars, we multiply by a factor to account for:
+     * - Market hours: ~6.5 hours/day = 390 minutes
+     * - Weekends: 5 trading days per 7 calendar days
+     * 
+     * @param end       the end time
+     * @param timeframe the bar timeframe
+     * @param barCount  number of bars needed
+     * @return calculated start time with buffer for non-trading periods
+     */
+    private Instant calculateStartForBarsWithBuffer(Instant end, String timeframe, int barCount) {
+        Duration barDuration = parseTimeframeDuration(timeframe);
+        Duration totalBarDuration = barDuration.multipliedBy(barCount);
+        
+        // For intraday timeframes, add buffer for non-trading hours
+        if (timeframe.endsWith("Min") || timeframe.endsWith("Hour")) {
+            // Market is open ~6.5 hours per day (390 minutes)
+            // Calendar has 24 hours per day
+            // So we need ~3.7x more calendar time than trading time for minute bars
+            // Add extra buffer for weekends (5/7 ratio) -> total multiplier ~5.2
+            // Using 6x as safe buffer to ensure we get enough data
+            double bufferMultiplier = 6.0;
+            long bufferedMillis = (long) (totalBarDuration.toMillis() * bufferMultiplier);
+            return end.minus(Duration.ofMillis(bufferedMillis));
+        } else {
+            // For daily/weekly bars, weekends are already excluded by Alpaca
+            // Just add buffer for weekends: 7/5 ratio ≈ 1.5x
+            double bufferMultiplier = 1.5;
+            long bufferedMillis = (long) (totalBarDuration.toMillis() * bufferMultiplier);
+            return end.minus(Duration.ofMillis(bufferedMillis));
+        }
     }
 
     private int validateLimit(Integer limit) {
