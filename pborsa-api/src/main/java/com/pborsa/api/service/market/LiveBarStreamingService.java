@@ -104,6 +104,7 @@ public class LiveBarStreamingService {
 
 
         // Send to trading engine
+        log.info("Sending {} bars to trading engine live update", symbols);
         LiveBarClient.LiveBarResult result = liveBarClient.sendLiveBars(
                 latestBars, timeframe, allStrategyIds
         );

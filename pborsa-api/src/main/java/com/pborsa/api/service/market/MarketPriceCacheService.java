@@ -162,7 +162,7 @@ public class MarketPriceCacheService {
                 return;
             }
 
-            log.info("Refreshing prices for {} active symbols", activeSymbols.size());
+            log.info("Refreshing prices for {} symbols", activeSymbols);
 
             // Get any user's credentials (we need credentials to access market data)
             // TODO: change system-level credentials
