@@ -32,7 +32,7 @@ public class BarDataProperties {
     /**
      * Default timeframe for bar data (e.g., "1Min", "5Min", "15Min", "1Hour", "1Day").
      */
-    private String defaultTimeframe = "1Min";
+    private String defaultTimeframe = "5Min";
 
     /**
      * Supported timeframes for UI selection.
