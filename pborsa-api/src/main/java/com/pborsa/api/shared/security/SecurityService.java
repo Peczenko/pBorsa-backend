@@ -10,10 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-/**
- * Service for security-related operations including user ID validation and access control.
- * Admin status is determined by the 'admin' custom claim in the Firebase ID token.
- */
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,7 +22,7 @@ public class SecurityService {
      * Resolves the target user ID for a query, considering admin privileges.
      * - If the authenticated user has admin=true claim: returns the requested userId (can access any user's data)
      * - If the authenticated user has admin=false: returns the authenticated user's ID (ignores path parameter)
-     * 
+     * <p>
      * This method MUST be used in controllers instead of trusting path parameters.
      *
      * @param requestedUserId The user ID from the request path

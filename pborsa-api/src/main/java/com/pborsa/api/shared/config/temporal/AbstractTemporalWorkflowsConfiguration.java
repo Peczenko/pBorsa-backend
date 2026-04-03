@@ -9,11 +9,6 @@ import org.springframework.context.annotation.Bean;
 
 import java.util.function.Function;
 
-/**
- * Abstract base class for creating workflow provider beans.
- * Equivalent to AbstractImperioWorkflowsConfiguration in reference project.
- * Creates Function<String, WorkflowType> beans for each workflow type.
- */
 public abstract class AbstractTemporalWorkflowsConfiguration {
 
     /**

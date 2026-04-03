@@ -3,10 +3,7 @@ package com.pborsa.api.shared.config.temporal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Configuration properties for Temporal workflow engine.
- * Equivalent to ImperioProperties in reference project.
- */
+
 @Component
 public record TemporalProperties(
         @Value("${temporal.enabled:true}")

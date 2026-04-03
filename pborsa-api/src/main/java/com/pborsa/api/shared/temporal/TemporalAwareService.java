@@ -7,11 +7,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 
-/**
- * Abstract base class providing conditional execution for Temporal workflows.
- * Equivalent to ImperioAwareService in reference project.
- * Services extending this class can use runWithTemporal() to conditionally execute workflows.
- */
 @Slf4j
 public abstract class TemporalAwareService {
 
