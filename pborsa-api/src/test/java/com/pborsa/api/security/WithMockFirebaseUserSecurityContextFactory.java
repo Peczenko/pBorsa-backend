@@ -1,5 +1,6 @@
 package com.pborsa.api.security;
 
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

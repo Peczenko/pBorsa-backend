@@ -1,11 +1,11 @@
 package com.pborsa.api;
 
-import com.pborsa.api.domain.dto.strategy.BaseStrategyDto;
-import com.pborsa.api.domain.dto.user.UserRole;
-import com.pborsa.api.domain.dto.user.UserStatus;
-import com.pborsa.api.domain.entity.BaseStrategyEntity;
-import com.pborsa.api.domain.entity.UserEntity;
-import com.pborsa.api.security.FirebaseUserPrincipal;
+import com.pborsa.domain.dto.strategy.BaseStrategyDto;
+import com.pborsa.api.user.UserRole;
+import com.pborsa.domain.dto.user.UserStatus;
+import com.pborsa.api.strategy.entity.BaseStrategyEntity;
+import com.pborsa.api.user.UserEntity;
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
 
 import java.time.Instant;
 

@@ -1,11 +1,13 @@
 package com.pborsa.api.service.trading;
 
-import com.pborsa.api.domain.dto.strategy.OrderHistoryDto;
-import com.pborsa.api.domain.dto.trading.OrderStatus;
-import com.pborsa.api.domain.dto.trading.OrderStatusReason;
-import com.pborsa.api.domain.entity.OrderEntity;
-import com.pborsa.api.domain.entity.OrderHistoryEntity;
-import com.pborsa.api.service.mapper.OrderHistoryMapper;
+import com.pborsa.api.order.entity.OrderEntity;
+import com.pborsa.api.order.entity.OrderHistoryEntity;
+import com.pborsa.api.order.mapper.OrderHistoryMapper;
+import com.pborsa.api.order.service.OrderHistoryPersistenceService;
+import com.pborsa.api.order.service.OrderHistoryQueryService;
+import com.pborsa.api.order.service.OrderQueryService;
+import com.pborsa.domain.dto.strategy.OrderHistoryDto;
+import com.pborsa.domain.dto.trading.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +24,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**

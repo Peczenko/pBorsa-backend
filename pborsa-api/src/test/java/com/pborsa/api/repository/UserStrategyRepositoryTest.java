@@ -2,12 +2,13 @@ package com.pborsa.api.repository;
 
 import com.pborsa.api.BaseRepositoryTest;
 import com.pborsa.api.config.TestCacheConfig;
-import com.pborsa.api.domain.dto.user.UserRole;
-import com.pborsa.api.domain.dto.user.UserStatus;
-import com.pborsa.api.domain.entity.BaseStrategyEntity;
-import com.pborsa.api.domain.entity.UserEntity;
-import com.pborsa.api.domain.entity.UserStrategyEntity;
-import com.pborsa.api.domain.entity.UserStrategyStatus;
+import com.pborsa.api.strategy.repository.UserStrategyRepository;
+import com.pborsa.api.user.UserRole;
+import com.pborsa.domain.dto.user.UserStatus;
+import com.pborsa.api.strategy.entity.BaseStrategyEntity;
+import com.pborsa.api.user.UserEntity;
+import com.pborsa.api.strategy.entity.UserStrategyEntity;
+import com.pborsa.domain.entity.UserStrategyStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -195,18 +196,18 @@ class UserStrategyRepositoryTest extends BaseRepositoryTest {
     }
 
     @Nested
-    @DisplayName("existsByUserIdAndBaseStrategyIdAndSymbol")
-    class ExistsByUserIdAndBaseStrategyIdAndSymbol {
+    @DisplayName("existsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol")
+    class ExistsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol {
 
         @Test
-        @DisplayName("should return true when combination exists")
+        @DisplayName("should return true when running combination exists")
         void returnsTrueWhenCombinationExists() {
             // given
             createUserStrategy(testUser.getId(), testBaseStrategy, "Existing Strategy", "TSLA", UserStrategyStatus.ACTIVE);
             entityManager.flush();
 
             // when
-            boolean exists = repository.existsByUserIdAndBaseStrategyIdAndSymbol(
+            boolean exists = repository.existsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol(
                     testUser.getId(), testBaseStrategy.getId(), "TSLA");
 
             // then
@@ -221,7 +222,7 @@ class UserStrategyRepositoryTest extends BaseRepositoryTest {
             entityManager.flush();
 
             // when
-            boolean exists = repository.existsByUserIdAndBaseStrategyIdAndSymbol(
+            boolean exists = repository.existsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol(
                     testUser.getId(), testBaseStrategy.getId(), "AAPL");
 
             // then
@@ -236,7 +237,7 @@ class UserStrategyRepositoryTest extends BaseRepositoryTest {
             entityManager.flush();
 
             // when
-            boolean exists = repository.existsByUserIdAndBaseStrategyIdAndSymbol(
+            boolean exists = repository.existsRunningStrategyByUserIdAndBaseStrategyIdAndSymbol(
                     999999L, testBaseStrategy.getId(), "TSLA");
 
             // then

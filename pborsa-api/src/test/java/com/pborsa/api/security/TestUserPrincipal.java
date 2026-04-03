@@ -1,6 +1,7 @@
 package com.pborsa.api.security;
 
 import com.pborsa.api.TestDataConstants;
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
 
 /**
  * Utility class for creating test FirebaseUserPrincipal instances.

@@ -38,7 +38,7 @@ public class TestSecurityConfig {
      */
     @Bean
     @Primary
-    public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
         http
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -64,8 +64,45 @@ public class TestSecurityConfig {
      * Only used when no other CacheManager is defined (e.g., in @WebMvcTest).
      */
     @Bean
+    @Primary
     @ConditionalOnMissingBean(CacheManager.class)
     public CacheManager testCacheManager() {
+        return new NoOpCacheManager();
+    }
+
+    /**
+     * Named cache manager for API credentials - required by services using @Cacheable.
+     */
+    @Bean("apiCredentialsCacheManager")
+    @ConditionalOnMissingBean(name = "apiCredentialsCacheManager")
+    public CacheManager apiCredentialsCacheManager() {
+        return new NoOpCacheManager();
+    }
+
+    /**
+     * Named cache manager for market data - required by services using @Cacheable.
+     */
+    @Bean("marketDataCacheManager")
+    @ConditionalOnMissingBean(name = "marketDataCacheManager")
+    public CacheManager marketDataCacheManager() {
+        return new NoOpCacheManager();
+    }
+
+    /**
+     * Named cache manager for positions - required by services using @Cacheable.
+     */
+    @Bean("positionsCacheManager")
+    @ConditionalOnMissingBean(name = "positionsCacheManager")
+    public CacheManager positionsCacheManager() {
+        return new NoOpCacheManager();
+    }
+
+    /**
+     * Named cache manager for account info - required by services using @Cacheable.
+     */
+    @Bean("accountInfoCacheManager")
+    @ConditionalOnMissingBean(name = "accountInfoCacheManager")
+    public CacheManager accountInfoCacheManager() {
         return new NoOpCacheManager();
     }
 }

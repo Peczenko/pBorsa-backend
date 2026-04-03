@@ -1,13 +1,14 @@
 package com.pborsa.api.service.trading;
 
-import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
-import com.pborsa.api.domain.dto.trading.OrderSide;
-import com.pborsa.api.domain.dto.trading.OrderStatus;
-import com.pborsa.api.domain.dto.trading.OrderType;
-import com.pborsa.api.domain.dto.trading.TimeInForce;
-import com.pborsa.api.domain.entity.OrderEntity;
-import com.pborsa.api.repository.OrderRepository;
-import com.pborsa.api.service.mapper.OrderDetailMapper;
+import com.pborsa.api.order.entity.OrderEntity;
+import com.pborsa.api.order.mapper.OrderDetailMapper;
+import com.pborsa.api.order.repository.OrderRepository;
+import com.pborsa.api.order.service.OrderQueryService;
+import com.pborsa.domain.dto.strategy.OrderDetailDto;
+import com.pborsa.domain.dto.trading.OrderSide;
+import com.pborsa.domain.dto.trading.OrderStatus;
+import com.pborsa.domain.dto.trading.OrderType;
+import com.pborsa.domain.dto.trading.TimeInForce;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**

@@ -1,11 +1,12 @@
 package com.pborsa.api.controller;
 
 import com.pborsa.api.config.TestSecurityConfig;
-import com.pborsa.api.domain.dto.user.UserProfileDto;
-import com.pborsa.api.domain.dto.user.UserStatus;
-import com.pborsa.api.security.FirebaseUserPrincipal;
+import com.pborsa.api.user.UserController;
+import com.pborsa.domain.dto.user.UserProfileDto;
+import com.pborsa.domain.dto.user.UserStatus;
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
 import com.pborsa.api.security.WithMockFirebaseUser;
-import com.pborsa.api.service.user.UserService;
+import com.pborsa.api.user.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

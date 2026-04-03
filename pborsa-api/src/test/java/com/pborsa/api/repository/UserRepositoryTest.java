@@ -2,16 +2,16 @@ package com.pborsa.api.repository;
 
 import com.pborsa.api.BaseRepositoryTest;
 import com.pborsa.api.config.TestCacheConfig;
-import com.pborsa.api.domain.dto.user.UserRole;
-import com.pborsa.api.domain.dto.user.UserStatus;
-import com.pborsa.api.domain.entity.UserEntity;
+import com.pborsa.api.user.UserEntity;
+import com.pborsa.api.user.UserRepository;
+import com.pborsa.api.user.UserRole;
+import com.pborsa.domain.dto.user.UserStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 

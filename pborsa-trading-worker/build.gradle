@@ -20,6 +20,6 @@ dependencies {
 }
 
 springBoot {
-    mainClass = 'com.pborsa.api.TradingWorkerApplication'
+    mainClass = 'com.pborsa.worker.TradingWorkerApplication'
 }
 

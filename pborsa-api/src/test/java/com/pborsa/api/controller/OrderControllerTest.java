@@ -1,15 +1,16 @@
 package com.pborsa.api.controller;
 
 import com.pborsa.api.config.TestSecurityConfig;
-import com.pborsa.api.domain.dto.strategy.OrderDetailDto;
-import com.pborsa.api.domain.dto.trading.OrderSide;
-import com.pborsa.api.domain.dto.trading.OrderStatus;
-import com.pborsa.api.domain.dto.trading.OrderType;
-import com.pborsa.api.domain.dto.trading.TimeInForce;
-import com.pborsa.api.security.FirebaseUserPrincipal;
+import com.pborsa.api.order.controller.OrderController;
+import com.pborsa.domain.dto.strategy.OrderDetailDto;
+import com.pborsa.domain.dto.trading.OrderSide;
+import com.pborsa.domain.dto.trading.OrderStatus;
+import com.pborsa.domain.dto.trading.OrderType;
+import com.pborsa.domain.dto.trading.TimeInForce;
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
 import com.pborsa.api.security.WithMockFirebaseUser;
-import com.pborsa.api.service.security.SecurityService;
-import com.pborsa.api.service.trading.OrderQueryService;
+import com.pborsa.api.shared.security.SecurityService;
+import com.pborsa.api.order.service.OrderQueryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

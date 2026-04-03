@@ -2,11 +2,11 @@ package com.pborsa.api.service;
 
 import com.pborsa.api.TestDataConstants;
 import com.pborsa.api.TestFixtures;
-import com.pborsa.api.domain.dto.strategy.BaseStrategyDto;
-import com.pborsa.api.domain.entity.BaseStrategyEntity;
-import com.pborsa.api.repository.BaseStrategyRepository;
-import com.pborsa.api.service.mapper.BaseStrategyMapper;
-import com.pborsa.api.service.strategy.BaseStrategyService;
+import com.pborsa.api.strategy.entity.BaseStrategyEntity;
+import com.pborsa.api.strategy.mapper.BaseStrategyMapper;
+import com.pborsa.api.strategy.repository.BaseStrategyRepository;
+import com.pborsa.api.strategy.service.BaseStrategyService;
+import com.pborsa.domain.dto.strategy.BaseStrategyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,10 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link BaseStrategyService}.

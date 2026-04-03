@@ -7,21 +7,11 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-/**
- * pBorsa Trading Backend Application.
- * 
- * Features:
- * - Alpaca API integration for trading and market data
- * - Multi-user support with cached API credentials
- * - Real-time WebSocket market data streaming
- * - Temporal workflow engine for reliable trade execution (client only, no workers)
- * - Async/Future support for non-blocking operations
- */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.pborsa.api", "com.pborsa.trading"})
 @EnableCaching
 @EnableAsync
 @EnableScheduling
-@ConfigurationPropertiesScan
+@ConfigurationPropertiesScan(basePackages = {"com.pborsa.api", "com.pborsa.trading"})
 public class PBorsaBackendApplication {
 
     public static void main(String[] args) {

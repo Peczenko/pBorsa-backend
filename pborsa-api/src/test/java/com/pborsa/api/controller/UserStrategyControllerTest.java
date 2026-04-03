@@ -1,17 +1,13 @@
 package com.pborsa.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pborsa.api.TestFixtures;
 import com.pborsa.api.config.TestSecurityConfig;
-import com.pborsa.api.domain.dto.strategy.BaseStrategyDto;
-import com.pborsa.api.domain.dto.strategy.CreateUserStrategyRequest;
-import com.pborsa.api.domain.dto.strategy.StrategyPnLDto;
-import com.pborsa.api.domain.dto.strategy.UpdateUserStrategyRequest;
-import com.pborsa.api.domain.dto.strategy.UserStrategyDto;
-import com.pborsa.api.security.FirebaseUserPrincipal;
 import com.pborsa.api.security.WithMockFirebaseUser;
-import com.pborsa.api.service.security.SecurityService;
-import com.pborsa.api.service.strategy.StrategyService;
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
+import com.pborsa.api.shared.security.SecurityService;
+import com.pborsa.api.strategy.controller.UserStrategyController;
+import com.pborsa.api.strategy.service.StrategyService;
+import com.pborsa.domain.dto.strategy.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,12 +29,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -289,43 +281,18 @@ class UserStrategyControllerTest {
     class DeleteUserStrategy {
 
         @Test
-        @DisplayName("should delete strategy successfully")
+        @DisplayName("should return bad request because deletion is temporarily disabled")
         @WithMockFirebaseUser(uid = "strategy-test-uid-9258", email = "strategy9258@test.com")
-        void deletesStrategySuccessfully() throws Exception {
+        void returnsBadRequestBecauseDeletionDisabled() throws Exception {
             // given
             Long userId = 9258L;
             Long strategyId = 1L;
 
-            when(securityService.resolveTargetUserId(eq(userId), any(FirebaseUserPrincipal.class)))
-                    .thenReturn(userId);
-            when(strategyService.deleteUserStrategy(userId, strategyId))
-                    .thenReturn(true);
-
-            // when/then
+            // when/then - endpoint is temporarily disabled
             mockMvc.perform(delete("/api/v1/users/{userId}/strategies/{strategyId}", userId, strategyId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success", is(true)));
-
-            verify(strategyService).deleteUserStrategy(userId, strategyId);
-        }
-
-        @Test
-        @DisplayName("should return 404 when deleting non-existent strategy")
-        @WithMockFirebaseUser(uid = "strategy-test-uid-9259", email = "strategy9259@test.com")
-        void returns404WhenDeletingNonExistent() throws Exception {
-            // given
-            Long userId = 9259L;
-            Long strategyId = 999L;
-
-            when(securityService.resolveTargetUserId(eq(userId), any(FirebaseUserPrincipal.class)))
-                    .thenReturn(userId);
-            when(strategyService.deleteUserStrategy(userId, strategyId))
-                    .thenReturn(false);
-
-            // when/then
-            mockMvc.perform(delete("/api/v1/users/{userId}/strategies/{strategyId}", userId, strategyId))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.success", is(false)));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.success", is(false)))
+                    .andExpect(jsonPath("$.error", is("Strategy removal is temporally disabled by API")));
         }
     }
 

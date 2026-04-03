@@ -2,9 +2,10 @@ package com.pborsa.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pborsa.api.config.TestSecurityConfig;
-import com.pborsa.api.domain.dto.credentials.CredentialsRegistrationRequest;
+import com.pborsa.api.credentials.CredentialsController;
+import com.pborsa.domain.dto.credentials.CredentialsRegistrationRequest;
 import com.pborsa.api.security.WithMockFirebaseUser;
-import com.pborsa.api.service.credentials.UserCredentialsService;
+import com.pborsa.trading.credentials.UserCredentialsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

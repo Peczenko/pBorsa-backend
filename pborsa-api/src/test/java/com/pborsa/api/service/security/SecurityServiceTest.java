@@ -1,11 +1,12 @@
 package com.pborsa.api.service.security;
 
-import com.pborsa.api.domain.dto.user.UserRole;
-import com.pborsa.api.domain.dto.user.UserStatus;
-import com.pborsa.api.domain.entity.UserEntity;
-import com.pborsa.api.exception.AccessDeniedException;
-import com.pborsa.api.repository.UserRepository;
-import com.pborsa.api.security.FirebaseUserPrincipal;
+import com.pborsa.api.user.UserRole;
+import com.pborsa.domain.dto.user.UserStatus;
+import com.pborsa.api.user.UserEntity;
+import com.pborsa.domain.exception.AccessDeniedException;
+import com.pborsa.api.user.UserRepository;
+import com.pborsa.api.shared.security.FirebaseUserPrincipal;
+import com.pborsa.api.shared.security.SecurityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

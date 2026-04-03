@@ -2,14 +2,14 @@ package com.pborsa.api.repository;
 
 import com.pborsa.api.BaseRepositoryTest;
 import com.pborsa.api.config.TestCacheConfig;
-import com.pborsa.api.domain.entity.BaseStrategyEntity;
+import com.pborsa.api.strategy.entity.BaseStrategyEntity;
+import com.pborsa.api.strategy.repository.BaseStrategyRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
